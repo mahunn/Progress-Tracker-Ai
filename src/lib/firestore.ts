@@ -7,9 +7,7 @@ import {
   deleteDoc,
   query,
   where,
-  orderBy,
   limit,
-  Timestamp,
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { ProgressEntry, StreakData } from './types';
@@ -26,11 +24,13 @@ export async function getUserEntries(userId: string): Promise<ProgressEntry[]> {
   const q = query(
     collection(db, 'entries'),
     where('user_id', '==', userId),
-    orderBy('date', 'desc'),
     limit(200)
   );
   const snaps = await getDocs(q);
-  return snaps.docs.map((d) => d.data() as ProgressEntry);
+  // Sort client-side to avoid requiring a composite Firestore index
+  return snaps.docs
+    .map((d) => d.data() as ProgressEntry)
+    .sort((a, b) => b.date.localeCompare(a.date));
 }
 
 export async function deleteEntryFromFirestore(entryId: string): Promise<void> {
@@ -41,11 +41,12 @@ export async function getPublicEntriesByUid(uid: string): Promise<ProgressEntry[
   const q = query(
     collection(db, 'entries'),
     where('user_id', '==', uid),
-    orderBy('date', 'desc'),
     limit(100)
   );
   const snaps = await getDocs(q);
-  return snaps.docs.map((d) => d.data() as ProgressEntry);
+  return snaps.docs
+    .map((d) => d.data() as ProgressEntry)
+    .sort((a, b) => b.date.localeCompare(a.date));
 }
 
 // ── Entry Map (date → entries[]) ──────────────────────────────
