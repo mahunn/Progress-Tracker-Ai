@@ -92,20 +92,17 @@ export default function LandingPage() {
             margin: "0 auto",
           }}
         >
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center">
             <img
               src="/logo.png"
               alt="Pathly"
+              className="brand-logo"
               style={{
-                width: 38,
-                height: 38,
+                height: 42,
+                width: "auto",
                 objectFit: "contain",
-                filter: "drop-shadow(0 2px 8px rgba(139, 21, 27, 0.2))",
               }}
             />
-            <span className="font-display text-gradient" style={{ fontWeight: 800, fontSize: "1.15rem" }}>
-              Pathly
-            </span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
             <ThemeToggle />

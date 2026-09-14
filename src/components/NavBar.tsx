@@ -34,20 +34,17 @@ export default function NavBar({ streak = 0, user }: NavBarProps) {
   return (
     <nav className="nav-bar">
       {/* Logo */}
-      <Link href="/dashboard" className="flex items-center gap-2.5 mr-auto" id="nav-logo">
+      <Link href="/dashboard" className="flex items-center mr-auto" id="nav-logo" title="Pathly">
         <img
           src="/logo.png"
           alt="Pathly"
+          className="brand-logo"
           style={{
-            width: 32,
-            height: 32,
+            height: 38,
+            width: "auto",
             objectFit: "contain",
-            filter: "drop-shadow(0 2px 8px rgba(139, 21, 27, 0.2))",
           }}
         />
-        <span className="font-display text-gradient" style={{ fontWeight: 700, fontSize: "1.05rem" }}>
-          Pathly
-        </span>
       </Link>
 
       {/* Nav Links */}

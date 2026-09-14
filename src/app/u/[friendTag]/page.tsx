@@ -74,9 +74,8 @@ export default function PublicProfilePage() {
           zIndex: 50,
         }}
       >
-        <div className="flex items-center gap-2">
-          <img src="/logo.png" alt="Pathly" style={{ width: 28, height: 28, objectFit: "contain" }} />
-          <span className="font-display text-gradient" style={{ fontWeight: 800, fontSize: "1.05rem" }}>Pathly</span>
+        <div className="flex items-center">
+          <img src="/logo.png" alt="Pathly" className="brand-logo" style={{ height: 34, width: "auto", objectFit: "contain" }} />
         </div>
         <Link href="/" className="btn btn-ghost btn-sm"><ArrowLeft size={14} /> Back</Link>
       </nav>
