@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, Chrome, Sparkles, X } from "lucide-react";
+import { Loader2, X } from "lucide-react";
 import { loginWithGoogle } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 
