@@ -67,14 +67,17 @@ export default function PublicProfilePage() {
           justifyContent: "space-between",
           padding: "1rem 2rem",
           borderBottom: "1px solid var(--border-subtle)",
-          background: "rgba(13,13,26,0.8)",
+          background: "var(--bg-nav)",
           backdropFilter: "blur(20px)",
           position: "sticky",
           top: 0,
           zIndex: 50,
         }}
       >
-        <span className="font-display text-gradient" style={{ fontWeight: 800, fontSize: "1.05rem" }}>Pathly</span>
+        <div className="flex items-center gap-2">
+          <img src="/logo.png" alt="Pathly" style={{ width: 28, height: 28, objectFit: "contain" }} />
+          <span className="font-display text-gradient" style={{ fontWeight: 800, fontSize: "1.05rem" }}>Pathly</span>
+        </div>
         <Link href="/" className="btn btn-ghost btn-sm"><ArrowLeft size={14} /> Back</Link>
       </nav>
 

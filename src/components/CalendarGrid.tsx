@@ -37,12 +37,12 @@ function getDayStatus(
 }
 
 const STATUS_STYLES: Record<DayStatus, React.CSSProperties> = {
-  completed: { background: "linear-gradient(135deg, rgba(16,185,129,0.3) 0%, rgba(52,211,153,0.18) 100%)", color: "var(--emerald-400)", borderColor: "rgba(16,185,129,0.4)" },
-  partial:   { background: "linear-gradient(135deg, rgba(251,191,36,0.25) 0%, rgba(245,158,11,0.15) 100%)", color: "var(--amber-400)", borderColor: "rgba(251,191,36,0.35)" },
-  missed:    { background: "linear-gradient(135deg, rgba(239,68,68,0.2) 0%, rgba(248,113,113,0.12) 100%)", color: "var(--rose-400)", borderColor: "rgba(239,68,68,0.3)" },
-  today:     { background: "rgba(139,92,246,0.12)", color: "var(--violet-400)", borderColor: "var(--violet-500)" },
+  completed: { background: "linear-gradient(135deg, rgba(16,185,129,0.14) 0%, rgba(5,150,105,0.06) 100%)", color: "var(--emerald-400)", borderColor: "rgba(16,185,129,0.3)" },
+  partial:   { background: "linear-gradient(135deg, rgba(245,158,11,0.14) 0%, rgba(217,119,6,0.06) 100%)", color: "var(--amber-400)", borderColor: "rgba(245,158,11,0.3)" },
+  missed:    { background: "linear-gradient(135deg, rgba(239,68,68,0.12) 0%, rgba(225,29,72,0.05) 100%)", color: "var(--rose-400)", borderColor: "rgba(239,68,68,0.25)" },
+  today:     { background: "rgba(124,58,237,0.08)", color: "var(--violet-400)", borderColor: "var(--violet-500)" },
   empty:     { background: "var(--bg-elevated)", color: "var(--text-ghost)", borderColor: "transparent" },
-  future:    { background: "rgba(255,255,255,0.015)", color: "var(--text-ghost)", borderColor: "transparent", cursor: "default" },
+  future:    { background: "rgba(15,23,42,0.02)", color: "var(--text-ghost)", borderColor: "transparent", cursor: "default" },
 };
 
 export default function CalendarGrid({

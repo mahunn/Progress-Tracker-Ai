@@ -38,7 +38,7 @@ export default function AuthModal({ onClose }: AuthModalProps) {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "rgba(7, 7, 15, 0.85)",
+        background: "rgba(15, 23, 42, 0.45)",
         backdropFilter: "blur(12px)",
         padding: "1rem",
       }}
@@ -77,23 +77,17 @@ export default function AuthModal({ onClose }: AuthModalProps) {
         )}
 
         {/* Logo mark */}
-        <div
-          style={{
-            width: 56,
-            height: 56,
-            borderRadius: 16,
-            background: "var(--grad-brand)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            margin: "0 auto 1.25rem",
-            boxShadow: "var(--glow-brand)",
-          }}
-        >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-            <path d="M5 18L9 9L13 13L18 5" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-            <circle cx="18" cy="5" r="2" fill="white" />
-          </svg>
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: "1.25rem" }}>
+          <img
+            src="/logo.png"
+            alt="Pathly"
+            style={{
+              width: 64,
+              height: 64,
+              objectFit: "contain",
+              filter: "drop-shadow(0 4px 16px rgba(139, 21, 27, 0.25))",
+            }}
+          />
         </div>
 
         <h2

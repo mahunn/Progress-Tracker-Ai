@@ -12,6 +12,14 @@ export const metadata: Metadata = {
     title: "Pathly — AI Progress Tracker",
     description: "Log what you learn. Watch yourself grow.",
     type: "website",
+    images: ["/logo.png"],
+  },
+  icons: {
+    icon: [
+      { url: "/logo.png" },
+      { url: "/favicon.ico" },
+    ],
+    apple: "/logo.png",
   },
 };
 
@@ -28,6 +36,11 @@ export default function RootLayout({
         <link
           href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
           rel="stylesheet"
+        />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('pathly-theme');if(t==='dark'){document.documentElement.setAttribute('data-theme','dark');}else{document.documentElement.setAttribute('data-theme','light');}}catch(e){}})();`,
+          }}
         />
       </head>
       <body>

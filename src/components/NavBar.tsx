@@ -6,6 +6,7 @@ import { BookOpen, Calendar, BarChart2, Flame, Users, LogOut, ChevronDown } from
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
 import { useState } from "react";
+import ThemeToggle from "@/components/ThemeToggle";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Log", icon: BookOpen },
@@ -34,23 +35,16 @@ export default function NavBar({ streak = 0, user }: NavBarProps) {
     <nav className="nav-bar">
       {/* Logo */}
       <Link href="/dashboard" className="flex items-center gap-2.5 mr-auto" id="nav-logo">
-        <div
+        <img
+          src="/logo.png"
+          alt="Pathly"
           style={{
             width: 32,
             height: 32,
-            borderRadius: 10,
-            background: "var(--grad-brand)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            boxShadow: "var(--glow-brand-sm)",
+            objectFit: "contain",
+            filter: "drop-shadow(0 2px 8px rgba(139, 21, 27, 0.2))",
           }}
-        >
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path d="M3 12L6 6L9 9L12 4" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            <circle cx="12" cy="4" r="1.5" fill="white" />
-          </svg>
-        </div>
+        />
         <span className="font-display text-gradient" style={{ fontWeight: 700, fontSize: "1.05rem" }}>
           Pathly
         </span>
@@ -78,6 +72,11 @@ export default function NavBar({ streak = 0, user }: NavBarProps) {
           <span>{streak} day streak</span>
         </div>
       )}
+
+      {/* Theme Toggle */}
+      <div style={{ marginLeft: streak > 0 ? "0.75rem" : "auto" }}>
+        <ThemeToggle />
+      </div>
 
       {/* User avatar + dropdown */}
       {user && (

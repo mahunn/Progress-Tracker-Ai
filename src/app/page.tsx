@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import AuthModal from "@/components/auth/AuthModal";
 import { Sparkles, Calendar, Users, TrendingUp, Flame, BookOpen } from "lucide-react";
+import ThemeToggle from "@/components/ThemeToggle";
 
 export default function LandingPage() {
   const { user, loading } = useAuth();
@@ -92,34 +93,30 @@ export default function LandingPage() {
           }}
         >
           <div className="flex items-center gap-2.5">
-            <div
+            <img
+              src="/logo.png"
+              alt="Pathly"
               style={{
-                width: 36,
-                height: 36,
-                borderRadius: 10,
-                background: "var(--grad-brand)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                boxShadow: "var(--glow-brand-sm)",
+                width: 38,
+                height: 38,
+                objectFit: "contain",
+                filter: "drop-shadow(0 2px 8px rgba(139, 21, 27, 0.2))",
               }}
-            >
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                <path d="M3 14L7 7L11 10L15 4" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-                <circle cx="15" cy="4" r="1.8" fill="white" />
-              </svg>
-            </div>
+            />
             <span className="font-display text-gradient" style={{ fontWeight: 800, fontSize: "1.15rem" }}>
               Pathly
             </span>
           </div>
-          <button
-            id="btn-landing-signin"
-            onClick={() => setShowAuth(true)}
-            className="btn btn-primary btn-sm"
-          >
-            Sign in
-          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+            <ThemeToggle />
+            <button
+              id="btn-landing-signin"
+              onClick={() => setShowAuth(true)}
+              className="btn btn-primary btn-sm"
+            >
+              Sign in
+            </button>
+          </div>
         </nav>
 
         {/* ── Hero ── */}
