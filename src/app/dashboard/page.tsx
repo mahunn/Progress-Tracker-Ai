@@ -89,34 +89,27 @@ export default function DashboardPage() {
     <div style={{ minHeight: "100vh" }}>
       <NavBar streak={streak.current} user={profile} />
 
-      <main style={{ maxWidth: 1200, margin: "0 auto", padding: "2rem 1.5rem 4rem" }}>
+      <main style={{ maxWidth: 1200, margin: "0 auto", padding: "1.5rem 1rem 6rem" }}>
 
         {/* Hero */}
-        <section className="animate-fade-up" style={{ marginBottom: "2.5rem" }}>
+        <section className="animate-fade-up" style={{ marginBottom: "2rem" }}>
           <h1
             className="font-display"
-            style={{ fontWeight: 900, fontSize: "clamp(1.8rem, 4vw, 2.8rem)", marginBottom: "0.5rem" }}
+            style={{ fontWeight: 900, fontSize: "clamp(1.6rem, 4vw, 2.8rem)", marginBottom: "0.5rem" }}
           >
-            <span style={{ color: "var(--text-secondary)", fontWeight: 500, fontSize: "clamp(0.9rem, 2vw, 1.1rem)", display: "block", marginBottom: "0.25rem", fontFamily: "'Inter', sans-serif" }}>
+            <span style={{ color: "var(--text-secondary)", fontWeight: 500, fontSize: "clamp(0.85rem, 2vw, 1.1rem)", display: "block", marginBottom: "0.25rem", fontFamily: "'Inter', sans-serif" }}>
               Hey, {profile?.displayName?.split(" ")[0] ?? "there"} 👋
             </span>
             <span className="text-gradient">Track your path</span>{" "}
             <span style={{ color: "var(--text-primary)" }}>forward.</span>
           </h1>
-          <p style={{ color: "var(--text-secondary)", fontSize: "1rem", maxWidth: 480 }}>
+          <p style={{ color: "var(--text-secondary)", fontSize: "0.95rem", maxWidth: 480 }}>
             Log what you learn in plain English — AI organizes it beautifully.
           </p>
         </section>
 
-        {/* 3-col grid */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1.6fr 1fr",
-            gap: "1.25rem",
-            alignItems: "start",
-          }}
-        >
+        {/* Responsive Dashboard Grid */}
+        <div className="dashboard-grid">
           {/* LEFT: Streak + Log Input + Today summary */}
           <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
             <StreakPanel streak={streak} />

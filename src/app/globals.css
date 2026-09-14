@@ -657,3 +657,111 @@ h4 { font-size: 1.1rem; font-weight: 600; }
   background: var(--border-subtle);
   margin: 1.5rem 0;
 }
+
+/* ─────────────────────────────────────────────
+   RESPONSIVE GRIDS & MOBILE NAVIGATION
+───────────────────────────────────────────── */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+@media (min-width: 860px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr 1.35fr;
+  }
+}
+
+@media (min-width: 1160px) {
+  .dashboard-grid {
+    grid-template-columns: 1.05fr 1.55fr 1fr;
+  }
+}
+
+.friends-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+@media (min-width: 768px) {
+  .friends-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.friend-profile-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+@media (min-width: 800px) {
+  .friend-profile-grid {
+    grid-template-columns: 1.4fr 1fr;
+  }
+}
+
+.mobile-bottom-nav {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .desktop-nav-links {
+    display: none !important;
+  }
+
+  .mobile-bottom-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 90;
+    height: 60px;
+    background: var(--bg-nav);
+    backdrop-filter: blur(20px) saturate(1.8);
+    -webkit-backdrop-filter: blur(20px) saturate(1.8);
+    border-top: 1px solid var(--border-subtle);
+    align-items: center;
+    justify-content: space-around;
+    padding: 0 0.5rem;
+    padding-bottom: max(0.2rem, env(safe-area-inset-bottom));
+  }
+
+  .mobile-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.2rem;
+    padding: 0.35rem 0.6rem;
+    border-radius: var(--r-md);
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 0.68rem;
+    font-weight: 600;
+    font-family: 'Outfit', sans-serif;
+    transition: all var(--t-fast) var(--ease-smooth);
+    min-width: 56px;
+  }
+
+  .mobile-nav-item.active {
+    color: var(--violet-400);
+    background: rgba(124, 58, 237, 0.1);
+  }
+
+  .mobile-hide-text {
+    display: none !important;
+  }
+
+  .nav-bar {
+    padding: 0 1rem;
+    height: 56px;
+  }
+}
+

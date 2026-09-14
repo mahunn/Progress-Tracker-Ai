@@ -80,17 +80,18 @@ export default function PublicProfilePage() {
         <Link href="/" className="btn btn-ghost btn-sm"><ArrowLeft size={14} /> Back</Link>
       </nav>
 
-      <main style={{ maxWidth: 1000, margin: "0 auto", padding: "2.5rem 1.5rem 4rem" }}>
+      <main style={{ maxWidth: 1000, margin: "0 auto", padding: "1.5rem 1rem 5rem" }}>
 
         {/* Profile header */}
         <div
           className="card animate-fade-up"
           style={{
-            padding: "2rem",
-            marginBottom: "2rem",
+            padding: "1.5rem",
+            marginBottom: "1.5rem",
             display: "flex",
+            flexWrap: "wrap",
             alignItems: "center",
-            gap: "1.5rem",
+            gap: "1.25rem",
             background: "linear-gradient(135deg, rgba(139,92,246,0.08) 0%, rgba(124,58,237,0.04) 100%)",
             border: "1px solid var(--border-soft)",
           }}
@@ -99,27 +100,27 @@ export default function PublicProfilePage() {
             <img
               src={profile.photoURL}
               alt={profile.displayName}
-              style={{ width: 72, height: 72, borderRadius: "50%", border: "3px solid var(--border-soft)", flexShrink: 0 }}
+              style={{ width: 64, height: 64, borderRadius: "50%", border: "3px solid var(--border-soft)", flexShrink: 0 }}
             />
           ) : (
-            <div style={{ width: 72, height: 72, borderRadius: "50%", background: "var(--grad-brand)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: 800, fontSize: "1.8rem", flexShrink: 0 }}>
+            <div style={{ width: 64, height: 64, borderRadius: "50%", background: "var(--grad-brand)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: 800, fontSize: "1.6rem", flexShrink: 0 }}>
               {profile.displayName?.[0]}
             </div>
           )}
-          <div style={{ flex: 1 }}>
-            <h1 className="font-display" style={{ fontWeight: 800, fontSize: "1.6rem", marginBottom: "0.2rem" }}>
+          <div style={{ flex: "1 1 200px" }}>
+            <h1 className="font-display" style={{ fontWeight: 800, fontSize: "1.5rem", marginBottom: "0.2rem" }}>
               {profile.displayName}
             </h1>
             <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", fontFamily: "'JetBrains Mono', monospace" }}>{profile.friendTag}</p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex gap-3" style={{ flexWrap: "wrap" }}>
             {[
               { value: streak.current, label: "Streak", icon: "🔥", color: "var(--amber-400)" },
               { value: streak.totalDaysLogged, label: "Days Logged", icon: "📅", color: "var(--sky-400)" },
               { value: streak.thisMonth, label: "This Month", icon: "📈", color: "var(--emerald-400)" },
-            ].map(({ value, label, icon, color }) => (
-              <div key={label} style={{ textAlign: "center", minWidth: 64 }}>
-                <div className="font-display" style={{ fontSize: "1.5rem", fontWeight: 800, color }}>{value}</div>
+            ].map(({ value, label, color }) => (
+              <div key={label} style={{ textAlign: "center", minWidth: 58 }}>
+                <div className="font-display" style={{ fontSize: "1.35rem", fontWeight: 800, color }}>{value}</div>
                 <div style={{ fontSize: "0.68rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", marginTop: "0.1rem" }}>{label}</div>
               </div>
             ))}
@@ -127,7 +128,7 @@ export default function PublicProfilePage() {
         </div>
 
         {/* Grid: calendar + entries */}
-        <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: "1.25rem", alignItems: "start" }}>
+        <div className="friend-profile-grid">
           <div className="card animate-fade-up stagger-1" style={{ padding: "1.5rem" }}>
             <CalendarGrid entryMap={entryMap} onDayClick={setSelectedDay} selectedDateKey={selectedDay?.dateKey ?? null} />
           </div>

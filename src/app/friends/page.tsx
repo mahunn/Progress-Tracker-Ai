@@ -141,11 +141,11 @@ export default function FriendsPage() {
   return (
     <div style={{ minHeight: "100vh" }}>
       <NavBar streak={0} user={profile} />
-      <main style={{ maxWidth: 900, margin: "0 auto", padding: "2rem 1.5rem 4rem" }}>
+      <main style={{ maxWidth: 900, margin: "0 auto", padding: "1.5rem 1rem 6rem" }}>
 
         {/* Header */}
         <div className="animate-fade-up" style={{ marginBottom: "2rem" }}>
-          <h1 className="font-display" style={{ fontWeight: 800, fontSize: "2rem", marginBottom: "0.4rem" }}>
+          <h1 className="font-display" style={{ fontWeight: 800, fontSize: "clamp(1.6rem, 4vw, 2.2rem)", marginBottom: "0.4rem" }}>
             <span className="text-gradient">Friends</span>
           </h1>
           <p style={{ color: "var(--text-secondary)", fontSize: "0.95rem" }}>
@@ -163,13 +163,13 @@ export default function FriendsPage() {
             >
               {profile?.friendTag}
             </span>
-            <span style={{ color: "var(--text-muted)", fontSize: "0.8rem", marginLeft: "0.5rem" }}>
+            <span style={{ color: "var(--text-muted)", fontSize: "0.8rem", display: "inline-block", marginTop: "0.25rem", marginLeft: "0.5rem" }}>
               Share this with friends so they can add you
             </span>
           </p>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.25rem", alignItems: "start" }}>
+        <div className="friends-grid">
 
           {/* LEFT — Search + Add */}
           <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>

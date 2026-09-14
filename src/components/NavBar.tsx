@@ -32,6 +32,7 @@ export default function NavBar({ streak = 0, user }: NavBarProps) {
   };
 
   return (
+    <>
     <nav className="nav-bar">
       {/* Logo */}
       <Link href="/dashboard" className="flex items-center mr-auto" id="nav-logo" title="Pathly">
@@ -47,8 +48,8 @@ export default function NavBar({ streak = 0, user }: NavBarProps) {
         />
       </Link>
 
-      {/* Nav Links */}
-      <div className="flex items-center gap-1">
+      {/* Nav Links (Desktop) */}
+      <div className="desktop-nav-links flex items-center gap-1">
         {NAV_ITEMS.map(({ href, label, icon: Icon }) => (
           <Link
             key={href}
@@ -64,9 +65,9 @@ export default function NavBar({ streak = 0, user }: NavBarProps) {
 
       {/* Streak badge */}
       {streak > 0 && (
-        <div className="streak-badge ml-4" style={{ fontSize: "0.82rem" }}>
+        <div className="streak-badge ml-auto md:ml-4" style={{ fontSize: "0.82rem" }}>
           <Flame size={15} className="streak-flame" />
-          <span>{streak} day streak</span>
+          <span>{streak}<span className="mobile-hide-text"> day streak</span></span>
         </div>
       )}
 
@@ -172,5 +173,24 @@ export default function NavBar({ streak = 0, user }: NavBarProps) {
         </div>
       )}
     </nav>
+
+    {/* Mobile Bottom Navigation Bar */}
+    <aside className="mobile-bottom-nav" aria-label="Mobile Navigation">
+      {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+        const isActive = pathname === href;
+        return (
+          <Link
+            key={href}
+            href={href}
+            id={`mobile-nav-${label.toLowerCase()}`}
+            className={cn("mobile-nav-item", isActive && "active")}
+          >
+            <Icon size={18} />
+            <span>{label}</span>
+          </Link>
+        );
+      })}
+    </aside>
+    </>
   );
 }
