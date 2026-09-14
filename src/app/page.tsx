@@ -1,210 +1,271 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import NavBar from "@/components/NavBar";
-import LogInput from "@/components/LogInput";
-import CalendarGrid from "@/components/CalendarGrid";
-import EntryCard from "@/components/EntryCard";
-import StreakPanel from "@/components/StreakPanel";
-import { ProgressEntry, CalendarDay } from "@/lib/types";
-import { getAllEntries, getEntriesDateMap, getStreakData } from "@/lib/store";
-import { formatDate, toDateKey } from "@/lib/utils";
-import { BookOpen, ChevronRight } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
+import AuthModal from "@/components/auth/AuthModal";
+import { Sparkles, Calendar, Users, TrendingUp, Flame, BookOpen } from "lucide-react";
 
-export default function DashboardPage() {
-  const [entries, setEntries] = useState<ProgressEntry[]>([]);
-  const [entryMap, setEntryMap] = useState<Record<string, ProgressEntry[]>>({});
-  const [selectedDay, setSelectedDay] = useState<CalendarDay | null>(null);
-  const [streak, setStreak] = useState(getStreakData());
-
-  const refresh = useCallback(() => {
-    const all = getAllEntries();
-    const map = getEntriesDateMap();
-    setEntries(all);
-    setEntryMap(map);
-    setStreak(getStreakData());
-  }, []);
+export default function LandingPage() {
+  const { user, loading } = useAuth();
+  const router = useRouter();
+  const [showAuth, setShowAuth] = useState(false);
 
   useEffect(() => {
-    refresh();
-  }, [refresh]);
+    if (!loading && user) {
+      router.replace("/dashboard");
+    }
+  }, [user, loading, router]);
 
-  const handleEntryAdded = (entry: ProgressEntry) => {
-    refresh();
-  };
-
-  const todayKey = toDateKey(new Date());
-  const todayEntries = entryMap[todayKey] ?? [];
-  const displayEntries = selectedDay
-    ? selectedDay.entries
-    : entries.slice(0, 10);
-  const displayLabel = selectedDay
-    ? formatDate(selectedDay.date)
-    : "Recent Entries";
-
-  return (
-    <div style={{ minHeight: "100vh" }}>
-      <NavBar streak={streak.current} />
-
-      <main style={{ maxWidth: 1200, margin: "0 auto", padding: "2rem 1.5rem 4rem" }}>
-
-        {/* Hero Section */}
-        <section className="animate-fade-up" style={{ marginBottom: "2.5rem" }}>
-          <h1
-            className="font-display"
-            style={{ fontWeight: 900, fontSize: "clamp(1.8rem, 4vw, 2.8rem)", marginBottom: "0.5rem" }}
-          >
-            <span className="text-gradient">Track your path</span>{" "}
-            <span style={{ color: "var(--text-primary)" }}>forward.</span>
-          </h1>
-          <p style={{ color: "var(--text-secondary)", fontSize: "1rem", maxWidth: 480 }}>
-            Log what you learn in plain English — AI organizes it beautifully.
-          </p>
-        </section>
-
-        {/* Main 3-col layout */}
+  if (loading) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
         <div
           style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1.6fr 1fr",
-            gap: "1.25rem",
-            alignItems: "start",
+            width: 48,
+            height: 48,
+            borderRadius: "50%",
+            border: "3px solid var(--border-subtle)",
+            borderTopColor: "var(--violet-500)",
+            animation: "spin 0.8s linear infinite",
+          }}
+        />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ minHeight: "100vh", overflow: "hidden" }}>
+      {/* ── Background orbs ── */}
+      <div
+        style={{
+          position: "fixed",
+          inset: 0,
+          pointerEvents: "none",
+          zIndex: 0,
+          overflow: "hidden",
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            top: "-20%",
+            left: "50%",
+            transform: "translateX(-50%)",
+            width: 800,
+            height: 500,
+            background: "radial-gradient(ellipse, rgba(124,58,237,0.18) 0%, transparent 70%)",
+            filter: "blur(60px)",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            bottom: "-10%",
+            right: "-10%",
+            width: 600,
+            height: 400,
+            background: "radial-gradient(ellipse, rgba(245,158,11,0.1) 0%, transparent 70%)",
+            filter: "blur(80px)",
+          }}
+        />
+      </div>
+
+      <div style={{ position: "relative", zIndex: 1 }}>
+        {/* ── Nav ── */}
+        <nav
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "1.25rem 2rem",
+            maxWidth: 1100,
+            margin: "0 auto",
           }}
         >
-          {/* ── LEFT: Streak + Log Input ── */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-            <StreakPanel streak={streak} />
-            <LogInput onEntryAdded={handleEntryAdded} />
-
-            {/* Today summary */}
-            {todayEntries.length > 0 && (
-              <div
-                className="card animate-fade-up stagger-3"
-                style={{ padding: "1.25rem" }}
-              >
-                <div className="flex items-center gap-2 mb-3">
-                  <div
-                    style={{
-                      width: 8,
-                      height: 8,
-                      borderRadius: "50%",
-                      background: "var(--emerald-400)",
-                      boxShadow: "0 0 8px rgba(16,185,129,0.5)",
-                    }}
-                  />
-                  <h4
-                    className="font-display"
-                    style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--text-secondary)" }}
-                  >
-                    Today · {todayEntries.length} {todayEntries.length === 1 ? "entry" : "entries"}
-                  </h4>
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                  {todayEntries.slice(0, 3).map((e) => (
-                    <div
-                      key={e.id}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "0.5rem",
-                        fontSize: "0.82rem",
-                        color: "var(--text-secondary)",
-                      }}
-                    >
-                      <BookOpen size={11} style={{ color: "var(--violet-400)", flexShrink: 0 }} />
-                      <span className="truncate-2">
-                        {e.lesson || e.module || e.course || e.raw_text}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* ── CENTER: Calendar ── */}
-          <div
-            className="card animate-fade-up stagger-1"
-            style={{ padding: "1.5rem" }}
-          >
-            <CalendarGrid
-              entryMap={entryMap}
-              onDayClick={setSelectedDay}
-              selectedDateKey={selectedDay?.dateKey ?? null}
-            />
-          </div>
-
-          {/* ── RIGHT: Entry Feed ── */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-            {/* Header */}
-            <div className="flex items-center gap-2 animate-fade-up stagger-2" style={{ marginBottom: "0.25rem" }}>
-              <h3
-                className="font-display"
-                style={{ fontSize: "0.88rem", fontWeight: 700, color: "var(--text-secondary)" }}
-              >
-                {displayLabel}
-              </h3>
-              {selectedDay && (
-                <button
-                  onClick={() => setSelectedDay(null)}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    color: "var(--text-muted)",
-                    fontSize: "0.75rem",
-                    marginLeft: "auto",
-                    padding: "0.2rem 0.5rem",
-                    borderRadius: "var(--r-sm)",
-                    transition: "color 150ms",
-                  }}
-                >
-                  Clear ✕
-                </button>
-              )}
+          <div className="flex items-center gap-2.5">
+            <div
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 10,
+                background: "var(--grad-brand)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                boxShadow: "var(--glow-brand-sm)",
+              }}
+            >
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <path d="M3 14L7 7L11 10L15 4" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                <circle cx="15" cy="4" r="1.8" fill="white" />
+              </svg>
             </div>
-
-            {displayEntries.length === 0 ? (
-              <div
-                className="card animate-fade-up stagger-3"
-                style={{ padding: "2rem", textAlign: "center" }}
-              >
-                <div style={{ fontSize: "2.5rem", marginBottom: "0.75rem" }}>📚</div>
-                <p
-                  className="font-display"
-                  style={{ fontWeight: 600, fontSize: "0.92rem", marginBottom: "0.35rem" }}
-                >
-                  {selectedDay ? "No entries this day" : "Your journey starts here"}
-                </p>
-                <p style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
-                  {selectedDay
-                    ? "Select a different day or log a new entry"
-                    : "Log your first study session above ↑"}
-                </p>
-              </div>
-            ) : (
-              displayEntries.map((entry, i) => (
-                <div
-                  key={entry.id}
-                  className={`stagger-${Math.min(i + 1, 5)}`}
-                >
-                  <EntryCard entry={entry} />
-                </div>
-              ))
-            )}
-
-            {!selectedDay && entries.length > 10 && (
-              <button
-                className="btn btn-ghost btn-sm"
-                style={{ width: "100%", marginTop: "0.5rem" }}
-              >
-                <ChevronRight size={14} />
-                View all {entries.length} entries
-              </button>
-            )}
+            <span className="font-display text-gradient" style={{ fontWeight: 800, fontSize: "1.15rem" }}>
+              Pathly
+            </span>
           </div>
-        </div>
-      </main>
+          <button
+            id="btn-landing-signin"
+            onClick={() => setShowAuth(true)}
+            className="btn btn-primary btn-sm"
+          >
+            Sign in
+          </button>
+        </nav>
+
+        {/* ── Hero ── */}
+        <section
+          style={{
+            maxWidth: 700,
+            margin: "5rem auto 0",
+            padding: "0 2rem",
+            textAlign: "center",
+          }}
+        >
+          <div
+            className="animate-fade-up"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "0.5rem",
+              background: "rgba(139,92,246,0.1)",
+              border: "1px solid var(--border-soft)",
+              borderRadius: "var(--r-pill)",
+              padding: "0.35rem 1rem",
+              fontSize: "0.8rem",
+              fontWeight: 600,
+              color: "var(--violet-400)",
+              marginBottom: "1.5rem",
+              fontFamily: "'Outfit', sans-serif",
+            }}
+          >
+            <Sparkles size={13} />
+            AI-powered study tracker
+          </div>
+
+          <h1 className="animate-fade-up stagger-1" style={{ marginBottom: "1.25rem" }}>
+            <span className="text-gradient">Log what you learn.</span>
+            <br />
+            <span style={{ color: "var(--text-primary)" }}>Watch yourself grow.</span>
+          </h1>
+
+          <p
+            className="animate-fade-up stagger-2"
+            style={{
+              fontSize: "1.1rem",
+              color: "var(--text-secondary)",
+              lineHeight: 1.65,
+              marginBottom: "2.5rem",
+            }}
+          >
+            Just type what you studied today — in plain English.
+            Pathly's AI parses it, organises it beautifully, tracks your streaks,
+            and lets you see your friends' journeys.
+          </p>
+
+          <div className="flex gap-3 justify-center flex-wrap animate-fade-up stagger-3">
+            <button
+              id="btn-hero-getstarted"
+              onClick={() => setShowAuth(true)}
+              className="btn btn-primary"
+              style={{ padding: "0.9rem 2rem", fontSize: "1rem" }}
+            >
+              <Sparkles size={17} />
+              Get started — it&apos;s free
+            </button>
+          </div>
+        </section>
+
+        {/* ── Feature pills ── */}
+        <section
+          className="animate-fade-up stagger-4"
+          style={{
+            maxWidth: 900,
+            margin: "4rem auto 0",
+            padding: "0 2rem",
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+            gap: "1rem",
+          }}
+        >
+          {[
+            { icon: Sparkles, title: "AI Parsing", desc: "Type naturally — AI extracts course, module, lesson automatically", color: "var(--violet-400)" },
+            { icon: Calendar, title: "Calendar View", desc: "Color-coded days show exactly when you were productive", color: "var(--sky-400)" },
+            { icon: Flame, title: "Streak Tracker", desc: "Daily streaks keep you accountable and motivated", color: "var(--amber-400)" },
+            { icon: Users, title: "Friends & Buddies", desc: "Add friends, see their streaks, and cheer each other on", color: "var(--emerald-400)" },
+          ].map(({ icon: Icon, title, desc, color }) => (
+            <div
+              key={title}
+              className="card"
+              style={{ padding: "1.4rem", textAlign: "left" }}
+            >
+              <div
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 10,
+                  background: `${color}1a`,
+                  border: `1px solid ${color}33`,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginBottom: "0.85rem",
+                  color,
+                }}
+              >
+                <Icon size={17} />
+              </div>
+              <h4 className="font-display" style={{ fontWeight: 700, marginBottom: "0.4rem", fontSize: "0.95rem" }}>
+                {title}
+              </h4>
+              <p style={{ fontSize: "0.82rem", color: "var(--text-secondary)", lineHeight: 1.55 }}>
+                {desc}
+              </p>
+            </div>
+          ))}
+        </section>
+
+        {/* ── Demo entry preview ── */}
+        <section
+          className="animate-fade-up stagger-5"
+          style={{ maxWidth: 600, margin: "3.5rem auto 6rem", padding: "0 2rem" }}
+        >
+          <div className="card" style={{ padding: "1.5rem" }}>
+            <div className="flex items-center gap-2 mb-3">
+              <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--emerald-400)", boxShadow: "0 0 8px rgba(16,185,129,0.5)" }} />
+              <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontFamily: "'Outfit', sans-serif", fontWeight: 600 }}>JUST NOW · AI PARSED</span>
+            </div>
+            <div className="flex gap-2 flex-wrap mb-3">
+              <span className="entry-tag entry-tag--subject">AI/ML</span>
+              <span className="entry-tag entry-tag--status-done">✅ Completed</span>
+            </div>
+            <p className="font-display" style={{ fontWeight: 700, fontSize: "1rem", marginBottom: "0.35rem" }}>
+              Mathematics for Machine Learning
+            </p>
+            <div className="flex items-center gap-1.5">
+              <BookOpen size={12} style={{ color: "var(--text-muted)" }} />
+              <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
+                Module 01 — Linear Equations{" "}
+                <span style={{ color: "var(--text-muted)" }}>→ 1-7 Connecting Concepts to ML</span>
+              </p>
+            </div>
+            <p style={{ marginTop: "0.75rem", fontSize: "0.75rem", color: "var(--text-ghost)", fontStyle: "italic" }}>
+              You typed: &quot;completed linear equation module 01, for ai ml&quot;
+            </p>
+          </div>
+        </section>
+      </div>
+
+      {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
     </div>
   );
 }
