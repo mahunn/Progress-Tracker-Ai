@@ -519,11 +519,37 @@ h4 { font-size: 1.1rem; font-weight: 600; }
   height: 64px;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   padding: 0 1.5rem;
   background: var(--bg-nav);
   backdrop-filter: blur(20px) saturate(1.8);
   -webkit-backdrop-filter: blur(20px) saturate(1.8);
   border-bottom: 1px solid var(--border-subtle);
+}
+
+.nav-left {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  justify-content: flex-start;
+  min-width: 0;
+}
+
+.nav-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin: 0 0.5rem;
+}
+
+.nav-right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex: 1;
+  gap: 0.6rem;
+  min-width: 0;
 }
 
 .nav-link {
@@ -760,8 +786,49 @@ h4 { font-size: 1.1rem; font-weight: 600; }
   }
 
   .nav-bar {
-    padding: 0 1rem;
-    height: 56px;
+    padding: 0 0.85rem;
+    height: 58px;
+  }
+
+  .nav-user-name {
+    display: none;
+  }
+
+  .dashboard-hero {
+    margin-bottom: 1.25rem !important;
+  }
+
+  .dashboard-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 1.25rem;
+  }
+
+  .dashboard-col-calendar {
+    order: 1 !important; /* Calendar comes first at the top on mobile */
+  }
+
+  .dashboard-col-left {
+    order: 2 !important; /* Upload section & streak below calendar */
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 1.25rem;
+  }
+
+  .dashboard-upload-section {
+    order: 1 !important; /* Upload file section first */
+  }
+
+  .dashboard-streak-panel {
+    order: 2 !important; /* Streak stats next */
+  }
+
+  .dashboard-today-summary {
+    order: 3 !important;
+  }
+
+  .dashboard-col-feed {
+    order: 3 !important; /* Entry feed at the bottom */
   }
 }
 

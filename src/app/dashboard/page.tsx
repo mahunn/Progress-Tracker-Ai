@@ -92,7 +92,7 @@ export default function DashboardPage() {
       <main style={{ maxWidth: 1200, margin: "0 auto", padding: "1.5rem 1rem 6rem" }}>
 
         {/* Hero */}
-        <section className="animate-fade-up" style={{ marginBottom: "2rem" }}>
+        <section className="dashboard-hero animate-fade-up" style={{ marginBottom: "2rem" }}>
           <h1
             className="font-display"
             style={{ fontWeight: 900, fontSize: "clamp(1.6rem, 4vw, 2.8rem)", marginBottom: "0.5rem" }}
@@ -111,12 +111,16 @@ export default function DashboardPage() {
         {/* Responsive Dashboard Grid */}
         <div className="dashboard-grid">
           {/* LEFT: Streak + Log Input + Today summary */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-            <StreakPanel streak={streak} />
-            <LogInput onEntryAdded={handleEntryAdded} />
+          <div className="dashboard-col-left" style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+            <div className="dashboard-streak-panel">
+              <StreakPanel streak={streak} />
+            </div>
+            <div className="dashboard-upload-section">
+              <LogInput onEntryAdded={handleEntryAdded} />
+            </div>
 
             {todayEntries.length > 0 && (
-              <div className="card animate-fade-up stagger-3" style={{ padding: "1.25rem" }}>
+              <div className="dashboard-today-summary card animate-fade-up stagger-3" style={{ padding: "1.25rem" }}>
                 <div className="flex items-center gap-2 mb-3">
                   <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--emerald-400)", boxShadow: "0 0 8px rgba(16,185,129,0.5)" }} />
                   <h4 className="font-display" style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--text-secondary)" }}>
@@ -136,7 +140,7 @@ export default function DashboardPage() {
           </div>
 
           {/* CENTER: Calendar */}
-          <div className="card animate-fade-up stagger-1" style={{ padding: "1.5rem" }}>
+          <div className="dashboard-col-calendar card animate-fade-up stagger-1" style={{ padding: "1.5rem" }}>
             <CalendarGrid
               entryMap={entryMap}
               onDayClick={setSelectedDay}
@@ -145,7 +149,7 @@ export default function DashboardPage() {
           </div>
 
           {/* RIGHT: Entry Feed */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+          <div className="dashboard-col-feed" style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
             <div className="flex items-center gap-2 animate-fade-up stagger-2" style={{ marginBottom: "0.25rem" }}>
               <h3 className="font-display" style={{ fontSize: "0.88rem", fontWeight: 700, color: "var(--text-secondary)" }}>
                 {displayLabel}
