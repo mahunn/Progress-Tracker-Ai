@@ -23,11 +23,15 @@ export function formatDateShort(date: Date): string {
 }
 
 export function toDateKey(date: Date): string {
-  return date.toISOString().split("T")[0]; // "2026-09-14"
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 export function fromDateKey(key: string): Date {
-  return new Date(key + "T00:00:00");
+  const [year, month, day] = key.split("-").map(Number);
+  return new Date(year, month - 1, day);
 }
 
 export function getDaysInMonth(year: number, month: number): number {
@@ -93,4 +97,47 @@ export function calculateStreak(dates: string[]): number {
     }
   }
   return streak;
+}
+
+/**
+ * Compresses an image file or blob to a lightweight JPEG data URL.
+ * Keeps resolution high enough for legibility while shrinking file size to ~30KB-80KB.
+ */
+export async function compressImage(
+  file: File | Blob,
+  maxDimension = 1024,
+  quality = 0.75
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = reject;
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = reject;
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > maxDimension || height > maxDimension) {
+          if (width > height) {
+            height = Math.round((height * maxDimension) / width);
+            width = maxDimension;
+          } else {
+            width = Math.round((width * maxDimension) / height);
+            height = maxDimension;
+          }
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          resolve(reader.result as string);
+          return;
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.src = reader.result as string;
+    };
+    reader.readAsDataURL(file);
+  });
 }

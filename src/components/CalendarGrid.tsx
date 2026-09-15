@@ -28,11 +28,11 @@ function getDayStatus(
   isToday_: boolean,
   isFuture_: boolean
 ): DayStatus {
-  if (isFuture_) return "future";
+  if (isFuture_ && entries.length === 0) return "future";
   if (entries.length === 0) return isToday_ ? "today" : "empty";
 
   const allDone = entries.every((e) => e.status === "completed");
-  if (allDone) return isToday_ ? "today" : "completed";
+  if (allDone) return "completed";
   return "partial";
 }
 
@@ -200,13 +200,15 @@ export default function CalendarGrid({
               aria-label={`${day.dateKey}: ${day.status}, ${day.entryCount} entries`}
               style={{
                 ...styles,
-                border: `1px solid ${styles.borderColor ?? "transparent"}`,
+                border: day.isToday
+                  ? "2px solid var(--violet-500)"
+                  : `1px solid ${styles.borderColor ?? "transparent"}`,
                 outline: isSelected ? `2px solid var(--violet-500)` : "none",
                 outlineOffset: 2,
-                boxShadow: day.status === "completed"
+                boxShadow: day.isToday
+                  ? "0 0 16px rgba(139,92,246,0.35)"
+                  : day.status === "completed"
                   ? "0 0 12px rgba(16,185,129,0.2)"
-                  : day.status === "today"
-                  ? "0 0 16px rgba(139,92,246,0.3)"
                   : "none",
               }}
             >

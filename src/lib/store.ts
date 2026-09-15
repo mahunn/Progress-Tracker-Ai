@@ -31,6 +31,34 @@ export function getEntriesDateMap(): Record<string, ProgressEntry[]> {
   }, {});
 }
 
+// ── Safe LocalStorage Helper ──────────────────────────────────
+function safeSetEntries(entries: ProgressEntry[]): void {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+  } catch (err) {
+    console.warn("localStorage quota exceeded, pruning screenshots and older entries...", err);
+    try {
+      // Step 1: Strip large data URLs from screenshots in localStorage
+      const lightweight = entries.map((e) => ({
+        ...e,
+        screenshot_url: e.screenshot_url?.startsWith("data:") ? undefined : e.screenshot_url,
+      }));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(lightweight));
+    } catch {
+      try {
+        // Step 2: Keep only the latest 30 entries without screenshots
+        const trimmed = entries.slice(0, 30).map((e) => ({
+          ...e,
+          screenshot_url: undefined,
+        }));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(trimmed));
+      } catch (finalErr) {
+        console.error("Critical: unable to persist to localStorage", finalErr);
+      }
+    }
+  }
+}
+
 // ── Write ─────────────────────────────────────────────────────
 export function saveEntry(entry: ProgressEntry): void {
   if (typeof window === "undefined") return;
@@ -41,13 +69,13 @@ export function saveEntry(entry: ProgressEntry): void {
   } else {
     entries.unshift(entry); // newest first
   }
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+  safeSetEntries(entries);
 }
 
 export function deleteEntry(id: string): void {
   if (typeof window === "undefined") return;
   const entries = getAllEntries().filter((e) => e.id !== id);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+  safeSetEntries(entries);
 }
 
 // ── Streak ────────────────────────────────────────────────────

@@ -56,7 +56,7 @@ export default function DashboardPage() {
     if (!user) return;
     const withUser = { ...entry, user_id: user.uid };
     await saveEntryToFirestore(withUser);
-    refresh();
+    await refresh();
   };
 
   if (authLoading || dataLoading) {

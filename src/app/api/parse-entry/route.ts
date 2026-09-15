@@ -20,7 +20,6 @@ Rules:
 - Be generous with inference. "did ai ml module 1" → subject="AI/ML", module="Module 01"
 - If screenshot text is provided, use it to fill in missing fields
 - Date formats like "14 sep", "sep 14", "today", "yesterday" should all be converted to ISO
-- Today's date for reference: ${new Date().toISOString().split("T")[0]}
 - Always return valid parseable JSON with all fields present
 - For missing optional fields, use empty string ""`;
 
@@ -37,6 +36,7 @@ export async function POST(req: NextRequest) {
     const formData = await req.formData();
     const text = formData.get("text") as string;
     const imageFile = formData.get("image") as File | null;
+    const clientDate = (formData.get("clientDate") as string) || new Date().toISOString().split("T")[0];
 
     if (!text?.trim() && !imageFile) {
       return NextResponse.json(
@@ -46,9 +46,9 @@ export async function POST(req: NextRequest) {
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-    const parts: Part[] = [{ text: SYSTEM_PROMPT }];
+    const systemInstruction = `${SYSTEM_PROMPT}\n- Today's date for reference: ${clientDate}`;
+    const parts: Part[] = [{ text: systemInstruction }];
 
     if (text?.trim()) {
       parts.push({ text: `User note: "${text}"` });
@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
       parts.push({
         inlineData: {
           data: base64,
-          mimeType: imageFile.type as "image/jpeg" | "image/png" | "image/webp",
+          mimeType: (imageFile.type as "image/jpeg" | "image/png" | "image/webp") || "image/jpeg",
         },
       });
       parts.push({
@@ -68,16 +68,50 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const result = await model.generateContent(parts);
-    const responseText = result.response.text().trim();
+    const modelsToTry = ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-3.6-flash"];
+    let responseText = "";
+    let lastError: unknown = null;
+
+    for (const modelName of modelsToTry) {
+      try {
+        const model = genAI.getGenerativeModel({
+          model: modelName,
+          generationConfig: {
+            responseMimeType: "application/json",
+            temperature: 0.1,
+          },
+        });
+        const result = await model.generateContent(parts);
+        responseText = result.response.text().trim();
+        if (responseText) break;
+      } catch (e) {
+        console.warn(`[parse-entry] Model ${modelName} failed, trying fallback:`, e);
+        lastError = e;
+      }
+    }
+
+    if (!responseText) {
+      throw lastError || new Error("Failed to get response from AI model");
+    }
 
     // Strip markdown code fences if present
     const cleaned = responseText
-      .replace(/^```json\n?/, "")
+      .replace(/^```(?:json)?\n?/, "")
       .replace(/\n?```$/, "")
       .trim();
 
     const parsed = JSON.parse(cleaned);
+
+    // Normalize confidence to 0-100 integer if model returned 0.0-1.0
+    if (typeof parsed.confidence === "number") {
+      if (parsed.confidence <= 1 && parsed.confidence > 0) {
+        parsed.confidence = Math.round(parsed.confidence * 100);
+      } else {
+        parsed.confidence = Math.min(100, Math.max(0, Math.round(parsed.confidence)));
+      }
+    } else {
+      parsed.confidence = 90;
+    }
 
     return NextResponse.json({ success: true, parsed });
   } catch (err) {

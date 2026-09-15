@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
-import { Sparkles, Upload, X, Loader2, CheckCircle, Image as ImageIcon } from "lucide-react";
+import { useState, useRef, useCallback, useEffect } from "react";
+import { Sparkles, Upload, X, Loader2, CheckCircle, Image as ImageIcon, FolderOpen, ClipboardPaste } from "lucide-react";
 import { ParsedEntry, ProgressEntry } from "@/lib/types";
 import { generateId, saveEntry } from "@/lib/store";
-import { formatDateShort } from "@/lib/utils";
+import { formatDateShort, compressImage, toDateKey } from "@/lib/utils";
 
 interface LogInputProps {
-  onEntryAdded: (entry: ProgressEntry) => void;
+  onEntryAdded: (entry: ProgressEntry) => void | Promise<void>;
 }
 
 type Phase = "idle" | "parsing" | "confirming" | "saving" | "done";
@@ -19,16 +19,40 @@ export default function LogInput({ onEntryAdded }: LogInputProps) {
   const [phase, setPhase] = useState<Phase>("idle");
   const [parsed, setParsed] = useState<ParsedEntry | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [clipboardError, setClipboardError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const textRef = useRef<HTMLTextAreaElement>(null);
 
-  const handleImageSelect = useCallback((file: File) => {
+  const handleImageSelect = useCallback(async (file: File) => {
     setImage(file);
-    const reader = new FileReader();
-    reader.onloadend = () => setImagePreview(reader.result as string);
-    reader.readAsDataURL(file);
+    try {
+      // Compress image client-side to prevent localStorage/Firestore quota limits (~40-80KB vs 5-10MB)
+      const compressedDataUrl = await compressImage(file, 1024, 0.75);
+      setImagePreview(compressedDataUrl);
+    } catch {
+      const reader = new FileReader();
+      reader.onloadend = () => setImagePreview(reader.result as string);
+      reader.readAsDataURL(file);
+    }
   }, []);
+
+  const handlePaste = useCallback(
+    (e: React.ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.startsWith("image/")) {
+          const file = items[i].getAsFile();
+          if (file) {
+            handleImageSelect(file);
+            break;
+          }
+        }
+      }
+    },
+    [handleImageSelect]
+  );
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
@@ -39,6 +63,59 @@ export default function LogInput({ onEntryAdded }: LogInputProps) {
     },
     [handleImageSelect]
   );
+
+  const handlePasteClipboardClick = async (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setClipboardError(null);
+    try {
+      if (!navigator.clipboard?.read) {
+        setClipboardError("Press Ctrl+V to paste your image directly.");
+        setTimeout(() => setClipboardError(null), 4000);
+        return;
+      }
+      const items = await navigator.clipboard.read();
+      let found = false;
+      for (const item of items) {
+        const imageType = item.types.find((t) => t.startsWith("image/"));
+        if (imageType) {
+          const blob = await item.getType(imageType);
+          const file = new File([blob], `screenshot_${Date.now()}.png`, { type: imageType });
+          await handleImageSelect(file);
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        setClipboardError("No image found in clipboard. Copy or snip an image first, then paste.");
+        setTimeout(() => setClipboardError(null), 4000);
+      }
+    } catch (err) {
+      console.warn("Clipboard access warning:", err);
+      setClipboardError("Clipboard permission required, or just press Ctrl+V to paste.");
+      setTimeout(() => setClipboardError(null), 4000);
+    }
+  };
+
+  useEffect(() => {
+    const handleGlobalPaste = (e: ClipboardEvent) => {
+      if (phase !== "idle") return;
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.startsWith("image/")) {
+          const file = items[i].getAsFile();
+          if (file) {
+            e.preventDefault();
+            handleImageSelect(file);
+            break;
+          }
+        }
+      }
+    };
+
+    window.addEventListener("paste", handleGlobalPaste);
+    return () => window.removeEventListener("paste", handleGlobalPaste);
+  }, [phase, handleImageSelect]);
 
   const clearImage = () => {
     setImage(null);
@@ -54,7 +131,14 @@ export default function LogInput({ onEntryAdded }: LogInputProps) {
     try {
       const formData = new FormData();
       if (text.trim()) formData.append("text", text);
-      if (image) formData.append("image", image);
+      if (imagePreview) {
+        // Send the compressed lightweight blob (~40KB) for instant upload & fast AI processing
+        const blob = await fetch(imagePreview).then((r) => r.blob());
+        formData.append("image", blob, "screenshot.jpg");
+      } else if (image) {
+        formData.append("image", image);
+      }
+      formData.append("clientDate", toDateKey(new Date()));
 
       const res = await fetch("/api/parse-entry", {
         method: "POST",
@@ -66,7 +150,7 @@ export default function LogInput({ onEntryAdded }: LogInputProps) {
       if (!data.success || !data.parsed) {
         // Fallback: create a basic entry from raw text
         const fallback: ParsedEntry = {
-          date: new Date().toISOString().split("T")[0],
+          date: toDateKey(new Date()),
           subject: "General",
           course: "",
           module: "",
@@ -87,36 +171,44 @@ export default function LogInput({ onEntryAdded }: LogInputProps) {
     }
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (!parsed) return;
     setPhase("saving");
+    setError(null);
 
-    const entry: ProgressEntry = {
-      id: generateId(),
-      date: parsed.date,
-      raw_text: text,
-      subject: parsed.subject || "General",
-      course: parsed.course || "",
-      module: parsed.module || "",
-      lesson: parsed.lesson || "",
-      status: parsed.status || "completed",
-      notes: parsed.notes || "",
-      screenshot_url: imagePreview ?? undefined,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
+    try {
+      const entry: ProgressEntry = {
+        id: generateId(),
+        date: parsed.date,
+        raw_text: text,
+        subject: parsed.subject || "General",
+        course: parsed.course || "",
+        module: parsed.module || "",
+        lesson: parsed.lesson || "",
+        status: parsed.status || "completed",
+        notes: parsed.notes || "",
+        screenshot_url: imagePreview ?? undefined,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
 
-    saveEntry(entry);
-    onEntryAdded(entry);
+      saveEntry(entry);
+      await onEntryAdded(entry);
 
-    // Reset
-    setTimeout(() => {
-      setText("");
-      clearImage();
-      setParsed(null);
-      setPhase("done");
-      setTimeout(() => setPhase("idle"), 2000);
-    }, 400);
+      // Reset
+      setTimeout(() => {
+        setText("");
+        clearImage();
+        setParsed(null);
+        setPhase("done");
+        setTimeout(() => setPhase("idle"), 2000);
+      }, 400);
+    } catch (err: unknown) {
+      console.error("Failed to save entry:", err);
+      const message = err instanceof Error ? err.message : "Failed to save entry. Please try again.";
+      setError(message);
+      setPhase("confirming");
+    }
   };
 
   const handleEdit = (field: keyof ParsedEntry, value: string) => {
@@ -144,7 +236,7 @@ export default function LogInput({ onEntryAdded }: LogInputProps) {
     );
   }
 
-  if (phase === "confirming" && parsed) {
+  if ((phase === "confirming" || phase === "saving") && parsed) {
     return (
       <div className="card animate-scale-in" style={{ padding: "1.75rem" }}>
         {/* Header */}
@@ -298,6 +390,23 @@ export default function LogInput({ onEntryAdded }: LogInputProps) {
           </div>
         )}
 
+        {/* Error message */}
+        {error && (
+          <p
+            style={{
+              color: "var(--rose-400)",
+              fontSize: "0.82rem",
+              marginBottom: "0.75rem",
+              padding: "0.6rem 1rem",
+              background: "rgba(239,68,68,0.08)",
+              borderRadius: "var(--r-md)",
+              border: "1px solid rgba(239,68,68,0.2)",
+            }}
+          >
+            {error}
+          </p>
+        )}
+
         {/* Actions */}
         <div className="flex gap-3">
           <button
@@ -305,13 +414,24 @@ export default function LogInput({ onEntryAdded }: LogInputProps) {
             className="btn btn-primary"
             style={{ flex: 1 }}
             onClick={handleConfirm}
+            disabled={phase === "saving"}
           >
-            <CheckCircle size={16} />
-            Save Entry
+            {phase === "saving" ? (
+              <>
+                <Loader2 size={16} className="animate-spin" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <CheckCircle size={16} />
+                Save Entry
+              </>
+            )}
           </button>
           <button
             className="btn btn-ghost"
-            onClick={() => { setPhase("idle"); setParsed(null); }}
+            onClick={() => { setPhase("idle"); setParsed(null); setError(null); }}
+            disabled={phase === "saving"}
           >
             Edit
           </button>
@@ -354,21 +474,45 @@ export default function LogInput({ onEntryAdded }: LogInputProps) {
         placeholder={`Type naturally, e.g.\n"completed linear equations module 1 for AI/ML"\n"today i finished 1-7 connecting concepts to ML, phitron math for ML"`}
         value={text}
         onChange={(e) => setText(e.target.value)}
+        onPaste={handlePaste}
         onKeyDown={(e) => {
           if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleParse();
         }}
         style={{ marginBottom: "0.75rem", lineHeight: 1.6 }}
       />
 
-      {/* Image Upload */}
+      {/* Image Upload Box */}
       {!imagePreview ? (
         <div
           className={`upload-zone ${isDragging ? "drag-over" : ""}`}
-          style={{ marginBottom: "1rem" }}
+          style={{
+            marginBottom: "1rem",
+            padding: "1.5rem 1rem",
+            outline: "none",
+            cursor: "pointer",
+            position: "relative",
+          }}
+          tabIndex={0}
+          role="button"
+          aria-label="Upload, drag & drop, or paste screenshot"
           onClick={() => fileRef.current?.click()}
-          onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              fileRef.current?.click();
+            }
+          }}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setIsDragging(true);
+          }}
+          onDragEnter={(e) => {
+            e.preventDefault();
+            setIsDragging(true);
+          }}
           onDragLeave={() => setIsDragging(false)}
           onDrop={handleDrop}
+          onPaste={handlePaste}
         >
           <input
             ref={fileRef}
@@ -380,35 +524,137 @@ export default function LogInput({ onEntryAdded }: LogInputProps) {
               if (file) handleImageSelect(file);
             }}
           />
-          <Upload size={20} style={{ color: "var(--text-muted)", margin: "0 auto 0.5rem" }} />
-          <p style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}>
-            Drop a screenshot or <span style={{ color: "var(--violet-400)" }}>browse</span>
+          <div
+            style={{
+              width: 42,
+              height: 42,
+              borderRadius: "50%",
+              background: isDragging ? "rgba(124,58,237,0.2)" : "rgba(124,58,237,0.1)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              margin: "0 auto 0.6rem",
+              color: "var(--violet-400)",
+              transition: "transform 0.2s ease",
+              transform: isDragging ? "scale(1.15)" : "scale(1)",
+            }}
+          >
+            <Upload size={20} />
+          </div>
+
+          <p style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--text-primary)", marginBottom: "0.2rem" }}>
+            {isDragging ? "Drop your screenshot here!" : "Drag & drop, paste, or upload screenshot"}
           </p>
-          <p style={{ fontSize: "0.72rem", color: "var(--text-ghost)", marginTop: "0.2rem" }}>
-            AI will read it to fill in course details
+          <p style={{ fontSize: "0.76rem", color: "var(--text-muted)", marginBottom: "0.85rem" }}>
+            AI extracts lesson, module &amp; topics from lecture slides, code, or whiteboards
           </p>
+
+          {/* Action options */}
+          <div
+            className="flex items-center justify-center gap-2 flex-wrap"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="btn btn-sm"
+              onClick={() => fileRef.current?.click()}
+              style={{
+                fontSize: "0.78rem",
+                padding: "0.35rem 0.75rem",
+                borderRadius: "var(--r-md)",
+                border: "1px solid var(--border-soft)",
+                background: "var(--bg-elevated)",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.35rem",
+                color: "var(--text-primary)",
+              }}
+            >
+              <FolderOpen size={14} style={{ color: "var(--violet-400)" }} />
+              Upload file
+            </button>
+
+            <button
+              type="button"
+              className="btn btn-sm"
+              onClick={handlePasteClipboardClick}
+              style={{
+                fontSize: "0.78rem",
+                padding: "0.35rem 0.75rem",
+                borderRadius: "var(--r-md)",
+                border: "1px solid var(--border-soft)",
+                background: "var(--bg-elevated)",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.35rem",
+                color: "var(--text-primary)",
+              }}
+            >
+              <ClipboardPaste size={14} style={{ color: "var(--emerald-400)" }} />
+              Paste image
+            </button>
+
+            <span
+              style={{
+                fontSize: "0.72rem",
+                color: "var(--text-ghost)",
+                padding: "0.35rem 0.55rem",
+                borderRadius: "var(--r-sm)",
+                background: "rgba(255,255,255,0.03)",
+                border: "1px dashed var(--border-subtle)",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "0.25rem",
+              }}
+            >
+              <kbd style={{ fontFamily: "inherit", fontWeight: 700, color: "var(--violet-300)" }}>Ctrl</kbd> + <kbd style={{ fontFamily: "inherit", fontWeight: 700, color: "var(--violet-300)" }}>V</kbd>
+            </span>
+          </div>
+
+          {clipboardError && (
+            <p
+              style={{
+                fontSize: "0.76rem",
+                color: "var(--amber-400)",
+                marginTop: "0.65rem",
+              }}
+            >
+              {clipboardError}
+            </p>
+          )}
         </div>
       ) : (
-        <div style={{ position: "relative", marginBottom: "1rem" }}>
+        <div
+          style={{ position: "relative", marginBottom: "1rem" }}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setIsDragging(true);
+          }}
+          onDragLeave={() => setIsDragging(false)}
+          onDrop={handleDrop}
+          onPaste={handlePaste}
+        >
           <img
             src={imagePreview}
             alt="Attached screenshot"
             style={{
               width: "100%",
-              maxHeight: 160,
+              maxHeight: 180,
               objectFit: "cover",
               borderRadius: "var(--r-md)",
               border: "1px solid var(--border-soft)",
+              display: "block",
             }}
           />
           <button
             onClick={clearImage}
+            title="Remove screenshot"
             style={{
               position: "absolute",
               top: 8,
               right: 8,
-              background: "rgba(0,0,0,0.7)",
-              border: "none",
+              background: "rgba(0,0,0,0.75)",
+              border: "1px solid rgba(255,255,255,0.2)",
               borderRadius: "50%",
               width: 28,
               height: 28,
@@ -417,6 +663,7 @@ export default function LogInput({ onEntryAdded }: LogInputProps) {
               justifyContent: "center",
               cursor: "pointer",
               color: "white",
+              transition: "background 0.2s",
             }}
           >
             <X size={14} />
@@ -426,18 +673,67 @@ export default function LogInput({ onEntryAdded }: LogInputProps) {
               position: "absolute",
               bottom: 8,
               left: 8,
-              background: "rgba(0,0,0,0.7)",
-              borderRadius: "var(--r-sm)",
-              padding: "0.2rem 0.5rem",
+              right: 8,
               display: "flex",
               alignItems: "center",
-              gap: "0.3rem",
-              fontSize: "0.72rem",
-              color: "var(--emerald-400)",
+              justifyContent: "space-between",
+              flexWrap: "wrap",
+              gap: "0.5rem",
             }}
           >
-            <ImageIcon size={11} />
-            Screenshot attached
+            <div
+              style={{
+                background: "rgba(0,0,0,0.75)",
+                backdropFilter: "blur(4px)",
+                borderRadius: "var(--r-sm)",
+                padding: "0.25rem 0.55rem",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.35rem",
+                fontSize: "0.74rem",
+                color: "var(--emerald-400)",
+                fontWeight: 600,
+                border: "1px solid rgba(16,185,129,0.3)",
+              }}
+            >
+              <ImageIcon size={12} />
+              Screenshot attached
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                style={{
+                  background: "rgba(0,0,0,0.75)",
+                  backdropFilter: "blur(4px)",
+                  borderRadius: "var(--r-sm)",
+                  padding: "0.25rem 0.55rem",
+                  fontSize: "0.72rem",
+                  color: "white",
+                  border: "1px solid rgba(255,255,255,0.2)",
+                  cursor: "pointer",
+                }}
+              >
+                Replace
+              </button>
+              <button
+                type="button"
+                onClick={handlePasteClipboardClick}
+                style={{
+                  background: "rgba(0,0,0,0.75)",
+                  backdropFilter: "blur(4px)",
+                  borderRadius: "var(--r-sm)",
+                  padding: "0.25rem 0.55rem",
+                  fontSize: "0.72rem",
+                  color: "var(--violet-300)",
+                  border: "1px solid rgba(139,92,246,0.3)",
+                  cursor: "pointer",
+                }}
+              >
+                Paste new (Ctrl+V)
+              </button>
+            </div>
           </div>
         </div>
       )}
