@@ -200,9 +200,11 @@ export default function CalendarGrid({
               aria-label={`${day.dateKey}: ${day.status}, ${day.entryCount} entries`}
               style={{
                 ...styles,
-                border: day.isToday
-                  ? "2px solid var(--violet-500)"
-                  : `1px solid ${styles.borderColor ?? "transparent"}`,
+                borderWidth: day.isToday ? 2 : 1,
+                borderStyle: "solid",
+                borderColor: day.isToday
+                  ? "var(--violet-500)"
+                  : (styles.borderColor ?? "transparent"),
                 outline: isSelected ? `2px solid var(--violet-500)` : "none",
                 outlineOffset: 2,
                 boxShadow: day.isToday

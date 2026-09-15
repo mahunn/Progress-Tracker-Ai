@@ -1,16 +1,38 @@
 "use client";
 
-import { ProgressEntry } from "@/lib/types";
+import { EntryStatus, ProgressEntry } from "@/lib/types";
 import { formatDateShort, truncate } from "@/lib/utils";
-import { BookOpen, CheckCircle2, Clock, RefreshCw, Image as ImageIcon, ChevronDown, ChevronUp } from "lucide-react";
-import { useState } from "react";
+import {
+  BookOpen,
+  CheckCircle2,
+  Clock,
+  RefreshCw,
+  Image as ImageIcon,
+  ChevronDown,
+  ChevronUp,
+  Check,
+  Loader2,
+  Trash2,
+} from "lucide-react";
+import { useState, useRef, useEffect } from "react";
 
 interface EntryCardProps {
   entry: ProgressEntry;
   compact?: boolean;
+  onStatusChange?: (id: string, newStatus: EntryStatus) => void | Promise<void>;
+  onDelete?: (id: string) => void | Promise<void>;
 }
 
-const STATUS_CONFIG = {
+const STATUS_CONFIG: Record<
+  EntryStatus,
+  {
+    icon: typeof CheckCircle2;
+    color: string;
+    bg: string;
+    border: string;
+    label: string;
+  }
+> = {
   completed: {
     icon: CheckCircle2,
     color: "var(--emerald-400)",
@@ -34,32 +56,204 @@ const STATUS_CONFIG = {
   },
 };
 
-export default function EntryCard({ entry, compact = false }: EntryCardProps) {
+const ALL_STATUSES: EntryStatus[] = ["completed", "in_progress", "revisit"];
+
+export default function EntryCard({
+  entry,
+  compact = false,
+  onStatusChange,
+  onDelete,
+}: EntryCardProps) {
   const [expanded, setExpanded] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [updating, setUpdating] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
   const cfg = STATUS_CONFIG[entry.status] ?? STATUS_CONFIG.completed;
   const StatusIcon = cfg.icon;
 
+  // Close dropdown on click outside
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [menuOpen]);
+
+  const handleStatusSelect = async (newStatus: EntryStatus) => {
+    if (newStatus === entry.status || !onStatusChange || updating) {
+      setMenuOpen(false);
+      return;
+    }
+    setUpdating(true);
+    setMenuOpen(false);
+    try {
+      await onStatusChange(entry.id, newStatus);
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const handleQuickComplete = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!onStatusChange || updating) return;
+    setUpdating(true);
+    try {
+      await onStatusChange(entry.id, "completed");
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!onDelete || deleting) return;
+    if (window.confirm("Are you sure you want to delete this study log?")) {
+      setDeleting(true);
+      try {
+        await onDelete(entry.id);
+      } finally {
+        setDeleting(false);
+      }
+    }
+  };
+
   return (
     <article className="entry-card animate-fade-up">
-      {/* Top row: subject tag + status + date */}
+      {/* Top row: subject tag + status + quick complete action + date */}
       <div className="flex items-center gap-2 mb-3" style={{ flexWrap: "wrap" }}>
         {entry.subject && (
           <span className="entry-tag entry-tag--subject">{entry.subject}</span>
         )}
-        <span
-          className="entry-tag"
-          style={{
-            background: cfg.bg,
-            color: cfg.color,
-            border: `1px solid ${cfg.border}`,
-          }}
-        >
-          <StatusIcon size={10} />
-          {cfg.label}
-        </span>
-        <span style={{ marginLeft: "auto", fontSize: "0.78rem", color: "var(--text-muted)" }}>
-          {formatDateShort(new Date(entry.date + "T00:00:00"))}
-        </span>
+
+        {/* Status Badge (clickable if onStatusChange provided) */}
+        <div style={{ position: "relative" }} ref={menuRef}>
+          {onStatusChange ? (
+            <button
+              type="button"
+              onClick={() => setMenuOpen(!menuOpen)}
+              className="entry-status-badge-btn"
+              style={{
+                background: cfg.bg,
+                color: cfg.color,
+                border: `1px solid ${cfg.border}`,
+              }}
+              title="Click to change status"
+            >
+              {updating ? (
+                <Loader2 size={10} style={{ animation: "spin 0.8s linear infinite" }} />
+              ) : (
+                <StatusIcon size={10} />
+              )}
+              {cfg.label}
+              <ChevronDown size={10} style={{ opacity: 0.7, marginLeft: 1 }} />
+            </button>
+          ) : (
+            <span
+              className="entry-tag"
+              style={{
+                background: cfg.bg,
+                color: cfg.color,
+                border: `1px solid ${cfg.border}`,
+              }}
+            >
+              <StatusIcon size={10} />
+              {cfg.label}
+            </span>
+          )}
+
+          {/* Status Dropdown Menu */}
+          {menuOpen && onStatusChange && (
+            <div className="entry-status-dropdown animate-fade-up">
+              <div
+                style={{
+                  fontSize: "0.68rem",
+                  color: "var(--text-muted)",
+                  padding: "0.25rem 0.5rem",
+                  fontWeight: 600,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
+                }}
+              >
+                Set Status
+              </div>
+              {ALL_STATUSES.map((statusKey) => {
+                const sCfg = STATUS_CONFIG[statusKey];
+                const ItemIcon = sCfg.icon;
+                const isActive = entry.status === statusKey;
+                return (
+                  <button
+                    key={statusKey}
+                    type="button"
+                    onClick={() => handleStatusSelect(statusKey)}
+                    className={`entry-status-option ${isActive ? "entry-status-option--active" : ""}`}
+                  >
+                    <ItemIcon size={13} style={{ color: sCfg.color, flexShrink: 0 }} />
+                    <span style={{ flex: 1 }}>{sCfg.label}</span>
+                    {isActive && <Check size={12} style={{ color: sCfg.color }} />}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* High-visibility One-click "Mark done" button if not completed */}
+        {entry.status !== "completed" && onStatusChange && (
+          <button
+            type="button"
+            onClick={handleQuickComplete}
+            disabled={updating}
+            className="quick-complete-btn"
+            title="Mark as completed"
+          >
+            {updating ? (
+              <Loader2 size={11} style={{ animation: "spin 0.8s linear infinite" }} />
+            ) : (
+              <Check size={11} strokeWidth={2.5} />
+            )}
+            <span>Mark done</span>
+          </button>
+        )}
+
+        {/* Date & optional actions */}
+        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <span style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
+            {formatDateShort(new Date(entry.date + "T00:00:00"))}
+          </span>
+          {onDelete && (
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={deleting}
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                color: "var(--text-ghost)",
+                padding: "0.2rem",
+                borderRadius: "var(--r-sm)",
+                display: "flex",
+                alignItems: "center",
+                transition: "color 150ms",
+              }}
+              title="Delete entry"
+              onMouseEnter={(e) => (e.currentTarget.style.color = "var(--rose-400)")}
+              onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-ghost)")}
+            >
+              {deleting ? (
+                <Loader2 size={12} style={{ animation: "spin 0.8s linear infinite" }} />
+              ) : (
+                <Trash2 size={12} />
+              )}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Course / Module / Lesson hierarchy */}

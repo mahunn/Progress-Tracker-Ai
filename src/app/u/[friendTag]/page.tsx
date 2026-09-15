@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { searchUserByTag } from "@/lib/firebase";
+import { searchUserByUsername } from "@/lib/firebase";
 import { getPublicEntriesByUid, buildEntryMap, computeStreakData } from "@/lib/firestore";
 import CalendarGrid from "@/components/CalendarGrid";
 import EntryCard from "@/components/EntryCard";
@@ -13,9 +13,15 @@ import { Flame, BookOpen, Loader2, ArrowLeft } from "lucide-react";
 export default function PublicProfilePage() {
   const params = useParams();
   const rawTag = decodeURIComponent(params.friendTag as string);
-  const friendTag = rawTag.startsWith("#") ? rawTag : `#${rawTag}`;
+  const cleanTag = rawTag.replace(/^[#@]/, "");
 
-  const [profile, setProfile] = useState<{ uid: string; displayName: string; photoURL: string; friendTag: string } | null>(null);
+  const [profile, setProfile] = useState<{
+    uid: string;
+    displayName: string;
+    photoURL: string;
+    username?: string;
+    friendTag: string;
+  } | null>(null);
   const [entries, setEntries] = useState<ProgressEntry[]>([]);
   const [entryMap, setEntryMap] = useState<Record<string, ProgressEntry[]>>({});
   const [selectedDay, setSelectedDay] = useState<CalendarDay | null>(null);
@@ -24,15 +30,19 @@ export default function PublicProfilePage() {
 
   useEffect(() => {
     (async () => {
-      const p = await searchUserByTag(friendTag);
-      if (!p) { setNotFound(true); setLoading(false); return; }
-      setProfile(p as { uid: string; displayName: string; photoURL: string; friendTag: string });
+      const p = await searchUserByUsername(cleanTag);
+      if (!p) {
+        setNotFound(true);
+        setLoading(false);
+        return;
+      }
+      setProfile(p as { uid: string; displayName: string; photoURL: string; username?: string; friendTag: string });
       const userEntries = await getPublicEntriesByUid(p.uid as string);
       setEntries(userEntries);
       setEntryMap(buildEntryMap(userEntries));
       setLoading(false);
     })();
-  }, [friendTag]);
+  }, [cleanTag]);
 
   if (loading) {
     return (
@@ -48,11 +58,14 @@ export default function PublicProfilePage() {
       <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "1rem" }}>
         <div style={{ fontSize: "3rem" }}>🔍</div>
         <h2 className="font-display" style={{ fontWeight: 700 }}>Profile not found</h2>
-        <p style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}>No user with tag <span style={{ color: "var(--violet-400)" }}>{friendTag}</span></p>
-        <Link href="/" className="btn btn-ghost btn-sm"><ArrowLeft size={14} /> Go home</Link>
+        <p style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}>
+          No user with username <span style={{ color: "var(--violet-400)" }}>@{cleanTag}</span>
+        </p>
+        <Link href="/friends" className="btn btn-ghost btn-sm"><ArrowLeft size={14} /> Back to Friends</Link>
       </div>
     );
   }
+
 
   const streak = computeStreakData(entries);
   const displayEntries = selectedDay ? selectedDay.entries : entries.slice(0, 8);
@@ -111,7 +124,9 @@ export default function PublicProfilePage() {
             <h1 className="font-display" style={{ fontWeight: 800, fontSize: "1.5rem", marginBottom: "0.2rem" }}>
               {profile.displayName}
             </h1>
-            <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", fontFamily: "'JetBrains Mono', monospace" }}>{profile.friendTag}</p>
+            <p style={{ fontSize: "0.85rem", color: "var(--violet-400)", fontFamily: "'JetBrains Mono', monospace" }}>
+              @{profile.username || profile.friendTag?.replace(/^#pathly-/, "")}
+            </p>
           </div>
           <div className="flex gap-3" style={{ flexWrap: "wrap" }}>
             {[

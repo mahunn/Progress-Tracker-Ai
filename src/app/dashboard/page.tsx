@@ -8,14 +8,15 @@ import LogInput from "@/components/LogInput";
 import CalendarGrid from "@/components/CalendarGrid";
 import EntryCard from "@/components/EntryCard";
 import StreakPanel from "@/components/StreakPanel";
-import { ProgressEntry, CalendarDay } from "@/lib/types";
+import { ProgressEntry, CalendarDay, EntryStatus } from "@/lib/types";
 import {
   getUserEntries,
   saveEntryToFirestore,
+  deleteEntryFromFirestore,
   buildEntryMap,
   computeStreakData,
 } from "@/lib/firestore";
-import { generateId } from "@/lib/store";
+import { generateId, saveEntry, deleteEntry } from "@/lib/store";
 import { formatDate, toDateKey } from "@/lib/utils";
 import { BookOpen, ChevronRight, Loader2 } from "lucide-react";
 
@@ -59,6 +60,51 @@ export default function DashboardPage() {
     await refresh();
   };
 
+  const handleStatusChange = async (entryId: string, newStatus: EntryStatus) => {
+    const target = entries.find((e) => e.id === entryId);
+    if (!target) return;
+    const updatedEntry: ProgressEntry = {
+      ...target,
+      status: newStatus,
+      updated_at: new Date().toISOString(),
+    };
+
+    // Optimistic UI updates
+    const updatedEntries = entries.map((e) => (e.id === entryId ? updatedEntry : e));
+    setEntries(updatedEntries);
+    setEntryMap(buildEntryMap(updatedEntries));
+    setStreak(computeStreakData(updatedEntries));
+
+    // Update local cache
+    saveEntry(updatedEntry);
+
+    // Persist to Firestore
+    if (user) {
+      try {
+        await saveEntryToFirestore(updatedEntry);
+      } catch (err) {
+        console.error("Failed to update status in Firestore:", err);
+      }
+    }
+  };
+
+  const handleDeleteEntry = async (entryId: string) => {
+    const updatedEntries = entries.filter((e) => e.id !== entryId);
+    setEntries(updatedEntries);
+    setEntryMap(buildEntryMap(updatedEntries));
+    setStreak(computeStreakData(updatedEntries));
+
+    deleteEntry(entryId);
+
+    if (user) {
+      try {
+        await deleteEntryFromFirestore(entryId);
+      } catch (err) {
+        console.error("Failed to delete entry from Firestore:", err);
+      }
+    }
+  };
+
   if (authLoading || dataLoading) {
     return (
       <div
@@ -82,7 +128,7 @@ export default function DashboardPage() {
 
   const todayKey = toDateKey(new Date());
   const todayEntries = entryMap[todayKey] ?? [];
-  const displayEntries = selectedDay ? selectedDay.entries : entries.slice(0, 10);
+  const displayEntries = selectedDay ? (entryMap[selectedDay.dateKey] ?? []) : entries.slice(0, 10);
   const displayLabel = selectedDay ? formatDate(selectedDay.date) : "Recent Entries";
 
   return (
@@ -177,7 +223,11 @@ export default function DashboardPage() {
             ) : (
               displayEntries.map((entry, i) => (
                 <div key={entry.id} className={`stagger-${Math.min(i + 1, 5)}`}>
-                  <EntryCard entry={entry} />
+                  <EntryCard
+                    entry={entry}
+                    onStatusChange={handleStatusChange}
+                    onDelete={handleDeleteEntry}
+                  />
                 </div>
               ))
             )}

@@ -65,15 +65,22 @@ export interface WeeklySummary {
 }
 
 export interface UserProfile {
-  id: string;
+  id?: string;
+  uid: string;
   email: string;
   username: string;
-  display_name: string;
+  displayName: string;
+  display_name?: string;
+  photoURL?: string;
   avatar_url?: string;
-  is_public: boolean;
-  created_at: string;
-  streak: StreakData;
+  friendTag?: string;
+  isPublic?: boolean;
+  is_public?: boolean;
+  createdAt?: string;
+  created_at?: string;
+  streak?: StreakData;
 }
+
 
 // For the AI parse API response
 export interface ParseApiResponse {

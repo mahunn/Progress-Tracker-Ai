@@ -1,1 +1,2 @@
 @AGENTS.md
+@SYSTEM_MEMORY.md

@@ -17,8 +17,9 @@ const NAV_ITEMS = [
 
 interface NavBarProps {
   streak?: number;
-  user?: { displayName: string; photoURL: string; friendTag: string } | null;
+  user?: { displayName: string; photoURL: string; friendTag?: string; username?: string } | null;
 }
+
 
 export default function NavBar({ streak = 0, user }: NavBarProps) {
   const pathname = usePathname();
@@ -153,7 +154,10 @@ export default function NavBar({ streak = 0, user }: NavBarProps) {
             >
               <div style={{ padding: "0.5rem 0.75rem 0.75rem", borderBottom: "1px solid var(--border-subtle)", marginBottom: "0.25rem" }}>
                 <p style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--text-primary)" }}>{user.displayName}</p>
-                <p style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginTop: "0.1rem" }}>{user.friendTag}</p>
+                <p style={{ fontSize: "0.72rem", color: "var(--violet-400)", fontFamily: "'JetBrains Mono', monospace", marginTop: "0.1rem" }}>
+                  @{user.username || user.friendTag?.replace(/^#pathly-/, "")}
+                </p>
+
               </div>
               <button
                 id="btn-signout"
