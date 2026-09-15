@@ -211,8 +211,9 @@ export async function ensureUserProfile(user: User): Promise<void> {
 }
 
 export async function getUserProfile(uid: string) {
+  if (!uid) return null;
   const snap = await getDoc(doc(db, "users", uid));
-  return snap.exists() ? snap.data() : null;
+  return snap.exists() ? { uid: snap.id, ...snap.data() } : null;
 }
 
 /**
@@ -225,17 +226,17 @@ export async function searchUserByUsername(searchQuery: string) {
   // 1. Search by username
   const q1 = query(collection(db, "users"), where("username", "==", clean));
   const snap1 = await getDocs(q1);
-  if (!snap1.empty) return snap1.docs[0].data();
+  if (!snap1.empty) return { uid: snap1.docs[0].id, ...snap1.docs[0].data() };
 
   // 2. Search by friendTag (exact clean tag)
   const q2 = query(collection(db, "users"), where("friendTag", "==", clean));
   const snap2 = await getDocs(q2);
-  if (!snap2.empty) return snap2.docs[0].data();
+  if (!snap2.empty) return { uid: snap2.docs[0].id, ...snap2.docs[0].data() };
 
   // 3. Search by legacy #pathly- prefix for backward compatibility
   const q3 = query(collection(db, "users"), where("friendTag", "==", `#pathly-${clean}`));
   const snap3 = await getDocs(q3);
-  if (!snap3.empty) return snap3.docs[0].data();
+  if (!snap3.empty) return { uid: snap3.docs[0].id, ...snap3.docs[0].data() };
 
   return null;
 }

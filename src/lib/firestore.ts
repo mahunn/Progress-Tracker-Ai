@@ -21,6 +21,7 @@ export async function saveEntryToFirestore(entry: ProgressEntry): Promise<void> 
 }
 
 export async function getUserEntries(userId: string): Promise<ProgressEntry[]> {
+  if (!userId) return [];
   const q = query(
     collection(db, 'entries'),
     where('user_id', '==', userId),
@@ -34,10 +35,12 @@ export async function getUserEntries(userId: string): Promise<ProgressEntry[]> {
 }
 
 export async function deleteEntryFromFirestore(entryId: string): Promise<void> {
+  if (!entryId) return;
   await deleteDoc(doc(db, 'entries', entryId));
 }
 
 export async function getPublicEntriesByUid(uid: string): Promise<ProgressEntry[]> {
+  if (!uid) return [];
   const q = query(
     collection(db, 'entries'),
     where('user_id', '==', uid),
@@ -48,6 +51,7 @@ export async function getPublicEntriesByUid(uid: string): Promise<ProgressEntry[
     .map((d) => d.data() as ProgressEntry)
     .sort((a, b) => b.date.localeCompare(a.date));
 }
+
 
 // ── Entry Map (date → entries[]) ──────────────────────────────
 
@@ -106,6 +110,8 @@ export async function sendFriendRequest(
   toUid: string,
   fromProfile: { displayName: string; photoURL: string; friendTag?: string; username?: string }
 ): Promise<{ success: boolean; error?: string }> {
+  if (!fromUid || !toUid) return { success: false, error: 'Invalid user IDs.' };
+
   // Check not already friends or pending
   const existingQ = query(
     collection(db, 'friend_requests'),
@@ -132,13 +138,13 @@ export async function sendFriendRequest(
   return { success: true };
 }
 
-
 export async function respondToFriendRequest(
   requestId: string,
   status: 'accepted' | 'declined',
   fromUid: string,
   toUid: string
 ): Promise<void> {
+  if (!requestId || !fromUid || !toUid) return;
   await setDoc(doc(db, 'friend_requests', requestId), { status }, { merge: true });
   if (status === 'accepted') {
     // Add to both users' friends subcollection
@@ -149,6 +155,7 @@ export async function respondToFriendRequest(
 }
 
 export async function getIncomingRequests(uid: string): Promise<FriendRequest[]> {
+  if (!uid) return [];
   const q = query(
     collection(db, 'friend_requests'),
     where('toUid', '==', uid),
@@ -159,9 +166,13 @@ export async function getIncomingRequests(uid: string): Promise<FriendRequest[]>
 }
 
 export async function getFriends(uid: string): Promise<string[]> {
+  if (!uid) return [];
   const snaps = await getDocs(collection(db, 'friends', uid, 'list'));
-  return snaps.docs.map((d) => d.data().uid as string);
+  return snaps.docs
+    .map((d) => (d.data()?.uid || d.id) as string)
+    .filter((id): id is string => Boolean(id) && typeof id === 'string');
 }
+
 
 // ── Leaderboard Ranking ───────────────────────────────────────
 
@@ -177,14 +188,29 @@ export interface LeaderboardUser {
   lastSubject?: string;
 }
 
+import { auth, cleanUsername } from './firebase';
+
 export async function getLeaderboardUsers(): Promise<LeaderboardUser[]> {
   try {
     // 1. Fetch users from Firestore
-    const usersSnap = await getDocs(query(collection(db, 'users'), limit(100)));
-    const usersList = usersSnap.docs.map((d) => d.data());
+    const usersSnap = await getDocs(query(collection(db, 'users'), limit(500)));
+    const usersList: {
+      uid: string;
+      displayName?: string;
+      username?: string;
+      friendTag?: string;
+      photoURL?: string;
+      email?: string;
+    }[] = usersSnap.docs.map((d) => {
+      const data = d.data();
+      return {
+        uid: d.id,
+        ...data,
+      };
+    });
 
     // 2. Fetch recent entries in bulk to calculate streak & completed tasks
-    const entriesSnap = await getDocs(query(collection(db, 'entries'), limit(2000)));
+    const entriesSnap = await getDocs(query(collection(db, 'entries'), limit(5000)));
 
     const userEntriesMap: Record<string, ProgressEntry[]> = {};
     for (const d of entriesSnap.docs) {
@@ -196,19 +222,57 @@ export async function getLeaderboardUsers(): Promise<LeaderboardUser[]> {
       userEntriesMap[entry.user_id].push(entry);
     }
 
-    // 3. Calculate metrics for each participant
+    // 3. Make sure any user with entries is also represented in the list
+    const existingUids = new Set(usersList.map((u) => u.uid));
+    for (const entryUserId of Object.keys(userEntriesMap)) {
+      if (!existingUids.has(entryUserId)) {
+        usersList.push({
+          uid: entryUserId,
+          displayName: 'Learner',
+          username: `user_${entryUserId.slice(-4)}`,
+        });
+        existingUids.add(entryUserId);
+      }
+    }
+
+    // 4. Ensure current user account is always represented
+    if (auth.currentUser && !existingUids.has(auth.currentUser.uid)) {
+      usersList.push({
+        uid: auth.currentUser.uid,
+        displayName: auth.currentUser.displayName || 'You',
+        username: cleanUsername(auth.currentUser.displayName || 'user'),
+        photoURL: auth.currentUser.photoURL || undefined,
+        email: auth.currentUser.email || undefined,
+      });
+      existingUids.add(auth.currentUser.uid);
+    }
+
+    // 5. Calculate metrics for all accounts
     const participants: Omit<LeaderboardUser, 'rank'>[] = [];
 
     for (const u of usersList) {
-      if (!u.uid) continue;
-      const entries = userEntriesMap[u.uid] ?? [];
+      const uid = u.uid;
+      if (!uid) continue;
+      const entries = userEntriesMap[uid] ?? [];
       const streakData = computeStreakData(entries);
       const completedTasks = entries.filter((e) => e.status === 'completed').length;
-      const rawUsername = u.username || (u.friendTag ? u.friendTag.replace(/^[#@]/, '').replace(/^pathly-/, '') : '') || 'user';
+      
+      const rawUsername =
+        u.username ||
+        (u.friendTag ? u.friendTag.replace(/^[#@]/, '').replace(/^pathly-/, '') : '') ||
+        (u.displayName ? cleanUsername(u.displayName.split(' ')[0]) : '') ||
+        (u.email ? cleanUsername(u.email.split('@')[0]) : '') ||
+        `user_${uid.slice(-4)}`;
+
+      const displayName =
+        u.displayName ||
+        (u.email ? u.email.split('@')[0] : '') ||
+        rawUsername ||
+        'Learner';
 
       participants.push({
-        uid: u.uid,
-        displayName: u.displayName || rawUsername,
+        uid,
+        displayName,
         username: rawUsername,
         photoURL: u.photoURL,
         streak: streakData.current,
@@ -218,7 +282,7 @@ export async function getLeaderboardUsers(): Promise<LeaderboardUser[]> {
       });
     }
 
-    // 4. Sort: Priority 1 = streak (descending), Priority 2 = completedTasks (descending), Priority 3 = totalEntries (descending)
+    // 6. Sort: Priority 1 = streak (desc), Priority 2 = completedTasks (desc), Priority 3 = totalEntries (desc)
     participants.sort((a, b) => {
       if (b.streak !== a.streak) {
         return b.streak - a.streak;
@@ -229,7 +293,7 @@ export async function getLeaderboardUsers(): Promise<LeaderboardUser[]> {
       return b.totalEntries - a.totalEntries;
     });
 
-    // 5. Assign 1-indexed ranks
+    // 7. Assign 1-indexed ranks (1, 2, 3...)
     return participants.map((p, idx) => ({
       ...p,
       rank: idx + 1,
@@ -239,4 +303,5 @@ export async function getLeaderboardUsers(): Promise<LeaderboardUser[]> {
     return [];
   }
 }
+
 

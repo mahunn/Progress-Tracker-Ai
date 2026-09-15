@@ -23,7 +23,7 @@
 | **Authentication** | **Firebase Auth 12.19.0** | Google Sign-in Popup (`signInWithPopup`), auto user profile creation |
 | **Database** | **Firebase Firestore 12.19.0** | Collections: `users`, `entries`, `friend_requests`, `friends` |
 | **Local Cache** | **Browser LocalStorage** | Temporary offline fallback & quick hydration (`trackpath_entries` key) |
-| **AI Parsing** | **Google Generative AI SDK** | `@google/generative-ai` 0.24.1 calling Gemini (`gemini-3.5-flash-lite`, `gemini-3.1-flash-lite`, `gemini-3.6-flash`) |
+| **AI Parsing** | **Google Generative AI SDK** | `@google/generative-ai` 0.24.1 calling Gemini (`gemini-2.0-flash`, `gemini-1.5-flash`, `gemini-2.5-flash`, `gemini-1.5-flash-8b`, `gemini-3.5-flash-lite`) |
 | **Icons & Utilities**| **lucide-react**, **date-fns** | Modern SVG icons, lightweight date formatting & calculations |
 
 ---
@@ -177,17 +177,18 @@ export interface UserProfile {
 
 ### 4. Community Leaderboard Ranking
 1. **Ranking Metrics & Priority**:
-   - `getLeaderboardUsers()` in `src/lib/firestore.ts` aggregates all registered participants and their entries.
+   - `getLeaderboardUsers()` in `src/lib/firestore.ts` aggregates all registered Google accounts and their entries.
    - **Priority 1**: `streak` (current streak, descending).
    - **Priority 2**: `completedTasks` (number of completed modules/lessons, descending).
    - **Tie-breaker**: `totalEntries` (descending).
+   - All Google accounts logged into the platform are guaranteed to appear (even with 0 entries).
 2. **UI Presentation in `/friends`**:
    - Segmented tab control toggles between **"🏆 Leaderboard"** and **"👥 My Buddies"**.
-   - Current user's personal standing is spotlighted in a header card ("Your Current Rank: #X of Y").
-   - Top 3 participants receive glowing gold 🥇, silver 🥈, and bronze 🥉 badges.
-   - Ranks 4+ receive numbered badges (`#4`, `#5`, etc.).
-   - Rows display avatar, display name, `@username`, "You" indicator, `🔥 X days` streak, and `✅ Y completed` tasks.
+   - Current user's personal standing is spotlighted in a header card ("Your Current Rank: X of Y").
+   - Ranking is presented with clean numbers: `1, 2, 3, 4, 5...` with themed podium styling (1 = Gold, 2 = Silver, 3 = Bronze, 4+ = Neutral).
+   - Rows display rank number, avatar, display name, `@username`, "You" indicator, `🔥 X days` streak, and `✅ Y completed` tasks.
    - Direct links to `/u/[username]` and 1-click `[+ Add]` friend buttons for other participants.
+
 
 
 
@@ -219,3 +220,4 @@ export interface UserProfile {
    - In React 19, never mix shorthand and longhand style properties (e.g. do not mix `border` with `borderColor`/`borderWidth`). Use distinct longhand properties (`borderWidth`, `borderStyle`, `borderColor`).
 3. **Optimistic Updates**: Any mutation to entries, statuses, or streaks in the dashboard must update React state immediately before awaiting Firebase Firestore network calls to ensure a snappy user experience.
 4. **Data Size Awareness**: Any screenshot storage must use client-side compression (`compressImage`) or external storage URLs to avoid exceeding Firestore's 1MB document limit.
+5. **Defensive Firestore Queries**: Never pass `undefined` or empty strings to `where()`, `doc()`, or subcollection references. All Firestore helper functions (`getUserEntries`, `getPublicEntriesByUid`, `getIncomingRequests`, `getFriends`, `getUserProfile`, `searchUserByUsername`) must guard early against falsy parameters, filter mapped results for valid IDs, and guarantee document ID mapping (`{ uid: doc.id, ...doc.data() }`).

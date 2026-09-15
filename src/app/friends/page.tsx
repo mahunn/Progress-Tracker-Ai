@@ -96,7 +96,7 @@ export default function FriendsPage() {
   }, [user, authLoading, router]);
 
   const loadData = useCallback(async () => {
-    if (!user) return;
+    if (!user?.uid) return;
     try {
       const [requests, friendUids, lbUsers] = await Promise.all([
         getIncomingRequests(user.uid),
@@ -104,14 +104,17 @@ export default function FriendsPage() {
         getLeaderboardUsers(),
       ]);
 
-      setIncomingRequests(requests);
-      setFriendUidsSet(new Set(friendUids));
-      setLeaderboard(lbUsers);
+      setIncomingRequests(requests || []);
+      const validFriendUids = (friendUids || []).filter((id): id is string => Boolean(id) && typeof id === "string");
+      setFriendUidsSet(new Set(validFriendUids));
+      setLeaderboard(lbUsers || []);
 
       // Load friend profiles + streaks
       const profiles = await Promise.all(
-        friendUids.map(async (uid) => {
+        validFriendUids.map(async (uid) => {
+          if (!uid) return null;
           const p = (await getUserProfile(uid)) as {
+
             uid: string;
             displayName: string;
             photoURL: string;
@@ -603,19 +606,20 @@ export default function FriendsPage() {
                       alignItems: "center",
                       justifyContent: "center",
                       fontWeight: 800,
-                      fontSize: "0.85rem",
+                      fontSize: "0.9rem",
                     }}
                   >
-                    #{userRankEntry.rank}
+                    {userRankEntry.rank}
                   </div>
                   <div>
                     <p style={{ fontSize: "0.88rem", fontWeight: 700, color: "var(--text-primary)" }}>
-                      Your Current Rank: #{userRankEntry.rank} of {leaderboard.length}
+                      Your Current Rank: {userRankEntry.rank} of {leaderboard.length}
                     </p>
                     <p style={{ fontSize: "0.76rem", color: "var(--text-secondary)" }}>
                       Keep logging daily to climb the leaderboard!
                     </p>
                   </div>
+
                 </div>
 
                 <div className="flex items-center gap-3">
@@ -695,8 +699,9 @@ export default function FriendsPage() {
                     >
                       {/* Rank Badge */}
                       <div className={`rank-badge ${rankClass}`}>
-                        {p.rank === 1 ? "🥇" : p.rank === 2 ? "🥈" : p.rank === 3 ? "🥉" : `#${p.rank}`}
+                        {p.rank}
                       </div>
+
 
                       {/* Avatar */}
                       {p.photoURL ? (
