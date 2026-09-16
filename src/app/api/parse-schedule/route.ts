@@ -74,10 +74,9 @@ export async function POST(req: NextRequest) {
     }
 
     const modelsToTry = [
-      "gemini-2.0-flash",
       "gemini-1.5-flash",
-      "gemini-2.5-flash",
-      "gemini-3.5-flash",
+      "gemini-1.5-pro",
+      "gemini-1.0-pro",
     ];
     let responseText = "";
     let lastError: unknown = null;
