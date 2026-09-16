@@ -10,7 +10,7 @@ import {
   limit,
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { ProgressEntry, StreakData } from './types';
+import { ProgressEntry, StreakData, WeeklyRoutine } from './types';
 import { calculateStreak } from './utils';
 
 // ── Entries ───────────────────────────────────────────────────
@@ -304,4 +304,26 @@ export async function getLeaderboardUsers(): Promise<LeaderboardUser[]> {
   }
 }
 
+// ── Weekly Routine ────────────────────────────────────────────
 
+export async function saveWeeklyRoutine(uid: string, routine: WeeklyRoutine): Promise<void> {
+  if (!uid) return;
+  const ref = doc(db, 'users', uid, 'routines', 'default');
+  await setDoc(ref, { ...routine, updated_at: new Date().toISOString() });
+}
+
+export async function getWeeklyRoutine(uid: string): Promise<WeeklyRoutine | null> {
+  if (!uid) return null;
+  const ref = doc(db, 'users', uid, 'routines', 'default');
+  const snap = await getDoc(ref);
+  if (snap.exists()) {
+    return snap.data() as WeeklyRoutine;
+  }
+  return null;
+}
+
+export async function deleteWeeklyRoutine(uid: string): Promise<void> {
+  if (!uid) return;
+  const ref = doc(db, 'users', uid, 'routines', 'default');
+  await deleteDoc(ref);
+}

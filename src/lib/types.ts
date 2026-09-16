@@ -89,3 +89,27 @@ export interface ParseApiResponse {
   error?: string;
   raw_response?: string;
 }
+
+export type DayOfWeek = "Sat" | "Sun" | "Mon" | "Tue" | "Wed" | "Thu" | "Fri";
+
+export interface ScheduleCourse {
+  id: string;
+  courseCode: string; // e.g. "CSE332.2"
+  startTime: string; // "01:00 PM"
+  endTime: string; // "02:30 PM"
+  days: DayOfWeek[];
+  color?: string; // Hex color or CSS variable
+}
+
+export interface WeeklyRoutine {
+  id: string;
+  user_id: string;
+  courses: ScheduleCourse[];
+  updated_at: string;
+}
+
+export interface ParseScheduleResponse {
+  success: boolean;
+  courses?: Omit<ScheduleCourse, "id" | "color">[];
+  error?: string;
+}

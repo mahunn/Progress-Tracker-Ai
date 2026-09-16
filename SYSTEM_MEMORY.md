@@ -138,7 +138,14 @@ export interface UserProfile {
 
 ## 5. Core Application Flows
 
-### 1. Logging an Entry
+### 1. Weekly Routine Calendar
+1. User visits `/calendar` and uploads an image (or text) of their course schedule.
+2. The image is compressed and sent to `/api/parse-schedule`, where Gemini 2.0 Flash extracts the courses, timings (start/end), and days (NSU format e.g. MW, ST).
+3. The parsed schedule is previewed on a beautiful 7-day grid (`WeeklyCalendar.tsx`) from Saturday to Friday, displaying blocks scaled proportionally to their time.
+4. User can save the routine to Firestore (`saveWeeklyRoutine`) or discard.
+5. Saved routines can be edited later using the `ScheduleEditor` component, or completely deleted.
+
+### 2. Logging an Entry
 1. User enters text or pastes/uploads a screenshot into `LogInput.tsx`.
 2. Image is compressed on client (`compressImage` in `src/lib/utils.ts`) to ~40-80KB to avoid Firestore/localStorage limits.
 3. Client posts to `/api/parse-entry` with `FormData` (`text`, `image`, `clientDate`).

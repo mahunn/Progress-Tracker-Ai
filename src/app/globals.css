@@ -1029,3 +1029,175 @@ h4 { font-size: 1.1rem; font-weight: 600; }
   }
 }
 
+/* ─────────────────────────────────────────────
+   WEEKLY SCHEDULE GRID
+───────────────────────────────────────────── */
+.schedule-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-card);
+  padding: 1.5rem;
+  transition: border-color var(--t-base) var(--ease-smooth),
+              box-shadow var(--t-base) var(--ease-smooth);
+}
+
+.schedule-card:hover {
+  border-color: var(--border-soft);
+  box-shadow: var(--shadow-lifted), var(--glow-brand-sm);
+}
+
+.schedule-grid-wrapper {
+  border-radius: var(--r-md);
+}
+
+.schedule-grid-container {
+  display: grid;
+  grid-template-columns: 60px repeat(7, 1fr);
+  gap: 1px;
+  background: var(--border-subtle);
+  border-radius: var(--r-md);
+  border: 1px solid var(--border-soft);
+  transition: grid-template-columns 0.4s var(--ease-spring);
+}
+
+@media (max-width: 767px) {
+  .schedule-card {
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    padding: 0;
+    margin-left: -1rem; /* Offset main container padding */
+    margin-right: -1rem; /* Offset main container padding */
+    background: transparent;
+  }
+  
+  .schedule-card:hover {
+    border: none;
+    box-shadow: none;
+  }
+
+  .schedule-grid-container {
+    grid-template-columns: 45px repeat(7, 1fr);
+    border-left: none;
+    border-right: none;
+    border-radius: 0;
+    border-top: 1px solid var(--border-subtle);
+    border-bottom: 1px solid var(--border-subtle);
+  }
+}
+
+.schedule-header:first-child { border-top-left-radius: calc(var(--r-md) - 1px); }
+.schedule-header:last-child { border-top-right-radius: calc(var(--r-md) - 1px); }
+.schedule-time-label:last-child { border-bottom-left-radius: calc(var(--r-md) - 1px); }
+.schedule-cell:last-child { border-bottom-right-radius: calc(var(--r-md) - 1px); }
+
+@keyframes cat-pop {
+  0% { transform: translate(-50%, 100%); opacity: 0; }
+  100% { transform: translate(-50%, 0); opacity: 1; }
+}
+
+@keyframes cat-blink-slow {
+  0%, 65% { transform: scaleY(1); }
+  75% { transform: scaleY(0); } /* Close slowly */
+  80% { transform: scaleY(0); } /* Hold */
+  90%, 100% { transform: scaleY(1); } /* Open slowly */
+}
+
+.schedule-header {
+  position: sticky;
+  top: 64px; /* Account for navbar */
+  z-index: 40; /* Higher than course blocks even on hover */
+  background: var(--bg-elevated);
+  padding: 0.75rem 0.5rem;
+  text-align: center;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-subtle);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.schedule-time-label {
+  background: var(--bg-surface);
+  padding: 0.5rem;
+  text-align: right;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  border-right: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  min-height: 60px; /* Each hour block height */
+}
+
+@media (max-width: 767px) {
+  .schedule-time-label {
+    font-size: 0.6rem;
+    padding: 0.5rem 0.25rem;
+  }
+}
+
+.schedule-cell {
+  background: var(--bg-surface);
+  position: relative;
+  min-height: 60px;
+}
+
+.schedule-course-block {
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  border-radius: var(--r-sm);
+  padding: 0.4rem;
+  font-size: 0.75rem;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: transform var(--t-fast) var(--ease-spring), box-shadow var(--t-fast) var(--ease-smooth), opacity var(--t-fast);
+  cursor: pointer;
+  z-index: 10;
+  border-left: 3px solid rgba(255,255,255,0.4);
+}
+
+.schedule-course-block:hover {
+  transform: scale(1.03) translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  z-index: 20;
+}
+
+@media (max-width: 767px) {
+  /* Smaller text for all mobile blocks since they are equal width */
+  .schedule-cell .course-block-title {
+    font-size: 0.65rem;
+  }
+  .schedule-cell .course-block-time {
+    font-size: 0.55rem;
+  }
+  .schedule-course-block {
+    padding: 0.2rem;
+  }
+  /* Hide day names on mobile (leaving only the first letter) */
+  .schedule-header span.day-name {
+    display: none;
+  }
+}
+
+.course-block-title {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  margin-bottom: 0.1rem;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+.course-block-time {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: rgba(255,255,255,0.9);
+}

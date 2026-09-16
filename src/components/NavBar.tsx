@@ -10,7 +10,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Log", icon: BookOpen },
-  { href: "/calendar", label: "Calendar", icon: Calendar },
+  { href: "/calendar", label: "Planner", icon: Calendar },
   { href: "/friends", label: "Friends", icon: Users },
   { href: "/weekly", label: "Summary", icon: BarChart2 },
 ];
