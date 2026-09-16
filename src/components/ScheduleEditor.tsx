@@ -38,7 +38,7 @@ export default function ScheduleEditor({ initialCourses, onSave, onCancel }: Sch
     ]);
   };
 
-  const handleUpdate = (id: string, field: keyof ScheduleCourse, value: any) => {
+  const handleUpdate = (id: string, field: keyof ScheduleCourse, value: unknown) => {
     setCourses((prev) => prev.map((c) => (c.id === id ? { ...c, [field]: value } : c)));
   };
 

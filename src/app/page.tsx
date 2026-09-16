@@ -162,8 +162,8 @@ export default function LandingPage() {
             }}
           >
             Just type what you studied today — in plain English.
-            Pathly's AI parses it, organises it beautifully, tracks your streaks,
-            and lets you see your friends' journeys.
+            Pathly&apos;s AI parses it, organises it beautifully, tracks your streaks,
+            and lets you see your friends&apos; journeys.
           </p>
 
           <div className="flex gap-3 justify-center flex-wrap animate-fade-up stagger-3">

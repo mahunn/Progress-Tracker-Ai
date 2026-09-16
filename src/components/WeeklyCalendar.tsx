@@ -159,6 +159,7 @@ export default function WeeklyCalendar({ courses }: { courses: ScheduleCourse[] 
   const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCurrentTime(new Date());
     const timer = setInterval(() => setCurrentTime(new Date()), 60000); // update every minute
     
