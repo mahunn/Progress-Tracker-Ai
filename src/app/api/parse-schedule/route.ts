@@ -73,34 +73,38 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const modelsToTry = [
-      "gemini-1.5-flash",
-      "gemini-1.5-flash-8b",
-      "gemini-1.5-pro",
-    ];
     let responseText = "";
-    let lastError: unknown = null;
-
-    for (const modelName of modelsToTry) {
-      try {
-        const model = genAI.getGenerativeModel({
-          model: modelName,
-          generationConfig: {
-            responseMimeType: "application/json",
-            temperature: 0.1,
-          },
-        });
-        const result = await model.generateContent(parts);
-        responseText = result.response.text().trim();
-        if (responseText) break;
-      } catch (e) {
-        console.warn(`[parse-schedule] Model ${modelName} failed, trying fallback:`, e);
-        lastError = e;
+    
+    try {
+      const model = genAI.getGenerativeModel({
+        model: "gemini-1.5-flash",
+        generationConfig: {
+          responseMimeType: "application/json",
+          temperature: 0.1,
+        },
+      });
+      const result = await model.generateContent(parts);
+      responseText = result.response.text().trim();
+    } catch (e: any) {
+      console.error("[parse-schedule] Gemini API error:", e);
+      // If it's a quota error, provide a clearer message
+      if (e.message?.includes("429") || e.message?.includes("quota")) {
+        return NextResponse.json(
+          { success: false, error: "You have exceeded your free Gemini API quota for the minute. Please wait about 1 minute and try again." },
+          { status: 400 }
+        );
       }
+      return NextResponse.json(
+        { success: false, error: e.message || "Failed to generate content with Gemini." },
+        { status: 400 }
+      );
     }
 
     if (!responseText) {
-      throw lastError || new Error("Failed to get response from AI model");
+      return NextResponse.json(
+        { success: false, error: "Received empty response from AI model." },
+        { status: 400 }
+      );
     }
 
     // Strip markdown code fences if present
