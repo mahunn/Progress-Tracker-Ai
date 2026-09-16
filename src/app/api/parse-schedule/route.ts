@@ -36,8 +36,8 @@ export async function POST(req: NextRequest) {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
       return NextResponse.json(
-        { success: false, error: "GEMINI_API_KEY not configured" },
-        { status: 500 }
+        { success: false, error: "GEMINI_API_KEY not configured. Please add it to your Vercel Environment Variables." },
+        { status: 400 }
       );
     }
 
@@ -120,7 +120,7 @@ export async function POST(req: NextRequest) {
         success: false,
         error: err instanceof Error ? err.message : "Unknown error occurred",
       },
-      { status: 500 }
+      { status: 400 }
     );
   }
 }
