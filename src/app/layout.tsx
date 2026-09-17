@@ -40,6 +40,19 @@ export default function RootLayout({
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="icon" type="image/png" href="/icon.png" />
         <link rel="apple-touch-icon" href="/icon.png" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              try {
+                if (localStorage.getItem('pathly-theme') === 'light') {
+                  document.documentElement.setAttribute('data-theme', 'light');
+                } else {
+                  document.documentElement.setAttribute('data-theme', 'dark');
+                }
+              } catch (_) {}
+            `,
+          }}
+        />
       </head>
       <body>
         <AuthProvider>{children}</AuthProvider>

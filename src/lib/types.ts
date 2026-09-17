@@ -2,7 +2,7 @@
 //  CORE TYPES for TrackPath Progress Tracker
 // ──────────────────────────────────────────────────────────────
 
-export type EntryStatus = "completed" | "in_progress" | "revisit";
+export type EntryStatus = "completed" | "in_progress" | "revisit" | "todo";
 
 export interface ParsedEntry {
   date: string;           // ISO date string: "2026-09-14"
@@ -12,6 +12,7 @@ export interface ParsedEntry {
   lesson: string;         // e.g. "1-7 Connecting the Concepts to ML"
   status: EntryStatus;
   notes: string;
+  estimated_time?: string; // e.g. "1 hr", "30 mins"
   confidence: number;     // 0–100, how confident the AI is in parsing
 }
 
@@ -26,6 +27,7 @@ export interface ProgressEntry {
   lesson: string;
   status: EntryStatus;
   notes: string;
+  estimated_time?: string;
   screenshot_url?: string;
   screenshot_caption?: string; // AI-extracted text from screenshot
   created_at: string;

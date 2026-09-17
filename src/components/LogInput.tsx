@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { Sparkles, Upload, X, Loader2, CheckCircle, Image as ImageIcon, FolderOpen, ClipboardPaste } from "lucide-react";
+import { Sparkles, Upload, X, Loader2, CheckCircle, Image as ImageIcon, FolderOpen, ClipboardPaste, Wand2 } from "lucide-react";
 import { ParsedEntry, ProgressEntry } from "@/lib/types";
 import { generateId, saveEntry } from "@/lib/store";
 import { formatDateShort, compressImage, toDateKey } from "@/lib/utils";
@@ -448,24 +448,11 @@ export default function LogInput({ onEntryAdded }: LogInputProps) {
   return (
     <div className="card animate-fade-up" style={{ padding: "1.75rem" }}>
       {/* Header */}
-      <div className="flex items-center gap-2 mb-4">
-        <div
-          style={{
-            width: 28,
-            height: 28,
-            borderRadius: 8,
-            background: "var(--grad-brand)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <Sparkles size={13} color="white" />
-        </div>
-        <h3 style={{ fontSize: "1rem", fontWeight: 700 }}>
+      <div className="flex items-start justify-between gap-3 mb-4">
+        <h3 style={{ fontSize: "1.05rem", fontWeight: 700, lineHeight: 1.3 }}>
           What did you learn today?
         </h3>
-        <span style={{ color: "var(--text-muted)", fontSize: "0.8rem", marginLeft: "auto" }}>
+        <span style={{ color: "var(--text-muted)", fontSize: "0.8rem", whiteSpace: "nowrap", paddingTop: "0.1rem" }}>
           {formatDateShort(new Date())}
         </span>
       </div>
@@ -476,7 +463,7 @@ export default function LogInput({ onEntryAdded }: LogInputProps) {
         id="log-input-textarea"
         className="input-field"
         rows={4}
-        placeholder={`Type naturally, e.g.\n"completed linear equations module 1 for AI/ML"\n"today i finished 1-7 connecting concepts to ML, phitron math for ML"`}
+        placeholder="e.g. Completed linear equations module 1 for AI/ML"
         value={text}
         onChange={(e) => setText(e.target.value)}
         onPaste={handlePaste}
@@ -547,74 +534,12 @@ export default function LogInput({ onEntryAdded }: LogInputProps) {
             <Upload size={20} />
           </div>
 
-          <p style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--text-primary)", marginBottom: "0.2rem" }}>
-            {isDragging ? "Drop your screenshot here!" : "Drag & drop, paste, or upload screenshot"}
+          <p style={{ fontSize: "0.95rem", fontWeight: 600, color: "var(--text-primary)", marginBottom: "0.25rem" }}>
+            {isDragging ? "Drop image here" : "Add a screenshot"}
           </p>
-          <p style={{ fontSize: "0.76rem", color: "var(--text-muted)", marginBottom: "0.85rem" }}>
-            AI extracts lesson, module &amp; topics from lecture slides, code, or whiteboards
+          <p style={{ fontSize: "0.76rem", color: "var(--text-muted)" }}>
+            Click, drag, or paste (Ctrl+V)
           </p>
-
-          {/* Action options */}
-          <div
-            className="flex items-center justify-center gap-2 flex-wrap"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              type="button"
-              className="btn btn-sm"
-              onClick={() => fileRef.current?.click()}
-              style={{
-                fontSize: "0.78rem",
-                padding: "0.35rem 0.75rem",
-                borderRadius: "var(--r-md)",
-                border: "1px solid var(--border-soft)",
-                background: "var(--bg-elevated)",
-                display: "flex",
-                alignItems: "center",
-                gap: "0.35rem",
-                color: "var(--text-primary)",
-              }}
-            >
-              <FolderOpen size={14} style={{ color: "var(--violet-400)" }} />
-              Upload file
-            </button>
-
-            <button
-              type="button"
-              className="btn btn-sm"
-              onClick={handlePasteClipboardClick}
-              style={{
-                fontSize: "0.78rem",
-                padding: "0.35rem 0.75rem",
-                borderRadius: "var(--r-md)",
-                border: "1px solid var(--border-soft)",
-                background: "var(--bg-elevated)",
-                display: "flex",
-                alignItems: "center",
-                gap: "0.35rem",
-                color: "var(--text-primary)",
-              }}
-            >
-              <ClipboardPaste size={14} style={{ color: "var(--emerald-400)" }} />
-              Paste image
-            </button>
-
-            <span
-              style={{
-                fontSize: "0.72rem",
-                color: "var(--text-ghost)",
-                padding: "0.35rem 0.55rem",
-                borderRadius: "var(--r-sm)",
-                background: "rgba(255,255,255,0.03)",
-                border: "1px dashed var(--border-subtle)",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "0.25rem",
-              }}
-            >
-              <kbd style={{ fontFamily: "inherit", fontWeight: 700, color: "var(--violet-300)" }}>Ctrl</kbd> + <kbd style={{ fontFamily: "inherit", fontWeight: 700, color: "var(--violet-300)" }}>V</kbd>
-            </span>
-          </div>
 
           {clipboardError && (
             <p
@@ -673,73 +598,7 @@ export default function LogInput({ onEntryAdded }: LogInputProps) {
           >
             <X size={14} />
           </button>
-          <div
-            style={{
-              position: "absolute",
-              bottom: 8,
-              left: 8,
-              right: 8,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              flexWrap: "wrap",
-              gap: "0.5rem",
-            }}
-          >
-            <div
-              style={{
-                background: "rgba(0,0,0,0.75)",
-                backdropFilter: "blur(4px)",
-                borderRadius: "var(--r-sm)",
-                padding: "0.25rem 0.55rem",
-                display: "flex",
-                alignItems: "center",
-                gap: "0.35rem",
-                fontSize: "0.74rem",
-                color: "var(--emerald-400)",
-                fontWeight: 600,
-                border: "1px solid rgba(16,185,129,0.3)",
-              }}
-            >
-              <ImageIcon size={12} />
-              Screenshot attached
-            </div>
 
-            <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                onClick={() => fileRef.current?.click()}
-                style={{
-                  background: "rgba(0,0,0,0.75)",
-                  backdropFilter: "blur(4px)",
-                  borderRadius: "var(--r-sm)",
-                  padding: "0.25rem 0.55rem",
-                  fontSize: "0.72rem",
-                  color: "white",
-                  border: "1px solid rgba(255,255,255,0.2)",
-                  cursor: "pointer",
-                }}
-              >
-                Replace
-              </button>
-              <button
-                type="button"
-                onClick={handlePasteClipboardClick}
-                style={{
-                  background: "rgba(0,0,0,0.75)",
-                  backdropFilter: "blur(4px)",
-                  borderRadius: "var(--r-sm)",
-                  padding: "0.25rem 0.55rem",
-                  fontSize: "0.72rem",
-                  color: "var(--violet-300)",
-                  border: "1px solid rgba(139,92,246,0.3)",
-                  cursor: "pointer",
-                }}
-              >
-                Paste new (Ctrl+V)
-              </button>
-            </div>
-          </div>
         </div>
       )}
 
@@ -760,7 +619,6 @@ export default function LogInput({ onEntryAdded }: LogInputProps) {
         </p>
       )}
 
-      {/* Submit */}
       <button
         id="btn-log-progress"
         className="btn btn-primary"
@@ -771,15 +629,12 @@ export default function LogInput({ onEntryAdded }: LogInputProps) {
         {phase === "parsing" ? (
           <>
             <Loader2 size={16} className="animate-spin" />
-            AI is parsing your entry...
+            AI is generating your entry...
           </>
         ) : (
           <>
-            <Sparkles size={16} />
-            Log Progress
-            <span style={{ marginLeft: "auto", fontSize: "0.75rem", opacity: 0.6 }}>
-              ⌘↵
-            </span>
+            <Wand2 size={16} />
+            Generate
           </>
         )}
       </button>

@@ -13,6 +13,8 @@ import {
   Check,
   Loader2,
   Trash2,
+  Circle,
+  Timer,
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 
@@ -54,9 +56,16 @@ const STATUS_CONFIG: Record<
     border: "rgba(139,92,246,0.25)",
     label: "Revisit",
   },
+  todo: {
+    icon: Circle,
+    color: "var(--sky-400)",
+    bg: "rgba(56,189,248,0.12)",
+    border: "rgba(56,189,248,0.25)",
+    label: "To Do",
+  },
 };
 
-const ALL_STATUSES: EntryStatus[] = ["completed", "in_progress", "revisit"];
+const ALL_STATUSES: EntryStatus[] = ["todo", "completed", "in_progress", "revisit"];
 
 export default function EntryCard({
   entry,
@@ -223,6 +232,12 @@ export default function EntryCard({
 
         {/* Date & optional actions */}
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          {entry.estimated_time && (
+            <span className="flex items-center gap-1" style={{ fontSize: "0.75rem", color: "var(--text-secondary)", background: "var(--bg-elevated)", padding: "0.15rem 0.4rem", borderRadius: "var(--r-sm)" }}>
+              <Timer size={10} />
+              {entry.estimated_time}
+            </span>
+          )}
           <span style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
             {formatDateShort(new Date(entry.date + "T00:00:00"))}
           </span>

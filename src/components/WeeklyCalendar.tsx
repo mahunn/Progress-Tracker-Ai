@@ -191,6 +191,27 @@ export default function WeeklyCalendar({ courses }: { courses: ScheduleCourse[] 
   return (
     <div className="schedule-card">
       <div className="schedule-grid-wrapper">
+        {/* Cat Sticky Layer */}
+        <div 
+          className="schedule-grid-container" 
+          style={{ 
+            position: "sticky", 
+            top: "64px", 
+            zIndex: 60, 
+            height: 0, 
+            border: "none", 
+            background: "transparent",
+            boxShadow: "none"
+          }}
+        >
+          <div /> {/* Time column offset */}
+          {DAYS.map((day) => (
+            <div key={`cat-${day}`} style={{ position: "relative" }}>
+              {day === todayString && <CatPeekingIcon />}
+            </div>
+          ))}
+        </div>
+
         <div className="schedule-grid-container" style={{ position: "relative" }}>
           {/* Current Time Indicator */}
           {currentTime && (() => {
@@ -280,11 +301,6 @@ export default function WeeklyCalendar({ courses }: { courses: ScheduleCourse[] 
                 zIndex: 60,
               }}
             >
-              {isToday && (
-                <div style={{ position: "absolute", inset: 0, opacity: isScrolled ? 0 : 1, transition: "opacity 0.3s ease", pointerEvents: "none" }}>
-                  <CatPeekingIcon />
-                </div>
-              )}
               <span style={{ position: "relative", zIndex: 10 }}>{day[0]}</span>
               <span className="day-name" style={{ position: "relative", zIndex: 10 }}>{day.slice(1)}</span>
             </div>

@@ -11,12 +11,12 @@ export default function ThemeToggle({ className }: { className?: string }) {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
     const saved = localStorage.getItem("pathly-theme") as "light" | "dark" | null;
-    if (saved === "dark") {
-      setTheme("dark");
-      document.documentElement.setAttribute("data-theme", "dark");
-    } else {
+    if (saved === "light") {
       setTheme("light");
       document.documentElement.setAttribute("data-theme", "light");
+    } else {
+      setTheme("dark");
+      document.documentElement.setAttribute("data-theme", "dark");
     }
   }, []);
 

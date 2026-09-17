@@ -115,9 +115,9 @@ export default function PublicProfilePage() {
           zIndex: 50,
         }}
       >
-        <div className="flex items-center">
+        <Link href="/dashboard" className="flex items-center">
           <img src="/logo.png" alt="Pathly" className="brand-logo" style={{ height: 34, width: "auto", objectFit: "contain" }} />
-        </div>
+        </Link>
         <Link href="/" className="btn btn-ghost btn-sm"><ArrowLeft size={14} /> Back</Link>
       </nav>
 

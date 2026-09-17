@@ -8,6 +8,7 @@ import LogInput from "@/components/LogInput";
 import CalendarGrid from "@/components/CalendarGrid";
 import EntryCard from "@/components/EntryCard";
 import StreakPanel from "@/components/StreakPanel";
+import DailyPlan from "@/components/DailyPlan";
 import { ProgressEntry, CalendarDay, EntryStatus } from "@/lib/types";
 import {
   getUserEntries,
@@ -57,6 +58,16 @@ export default function DashboardPage() {
     if (!user) return;
     const withUser = { ...entry, user_id: user.uid };
     await saveEntryToFirestore(withUser);
+    await refresh();
+  };
+
+  const handleEntriesAdded = async (newEntries: ProgressEntry[]) => {
+    if (!user) return;
+    const savePromises = newEntries.map(async (entry) => {
+      const withUser = { ...entry, user_id: user.uid };
+      return saveEntryToFirestore(withUser);
+    });
+    await Promise.all(savePromises);
     await refresh();
   };
 
@@ -128,8 +139,8 @@ export default function DashboardPage() {
 
   const todayKey = toDateKey(new Date());
   const todayEntries = entryMap[todayKey] ?? [];
-  const displayEntries = selectedDay ? (entryMap[selectedDay.dateKey] ?? []) : entries.slice(0, 10);
-  const displayLabel = selectedDay ? formatDate(selectedDay.date) : "Recent Entries";
+  const displayEntries = selectedDay ? (entryMap[selectedDay.dateKey] ?? []) : todayEntries;
+  const displayLabel = selectedDay ? formatDate(selectedDay.date) : "Today's Tasks";
 
   return (
     <div style={{ minHeight: "100vh" }}>
@@ -156,37 +167,12 @@ export default function DashboardPage() {
 
         {/* Responsive Dashboard Grid */}
         <div className="dashboard-grid">
-          {/* LEFT: Streak + Log Input + Today summary */}
+          {/* LEFT: Streak & Daily Plan */}
           <div className="dashboard-col-left" style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
             <div className="dashboard-streak-panel">
               <StreakPanel streak={streak} />
             </div>
-            <div className="dashboard-upload-section">
-              <LogInput onEntryAdded={handleEntryAdded} />
-            </div>
-
-            {dataLoading ? (
-              <div className="flex justify-center p-4">
-                <Loader2 size={24} className="animate-spin" style={{ color: "var(--violet-400)" }} />
-              </div>
-            ) : todayEntries.length > 0 && (
-              <div className="dashboard-today-summary card animate-fade-up stagger-3" style={{ padding: "1.25rem" }}>
-                <div className="flex items-center gap-2 mb-3">
-                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--emerald-400)", boxShadow: "0 0 8px rgba(16,185,129,0.5)" }} />
-                  <h4 className="font-display" style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--text-secondary)" }}>
-                    Today · {todayEntries.length} {todayEntries.length === 1 ? "entry" : "entries"}
-                  </h4>
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                  {todayEntries.slice(0, 3).map((e) => (
-                    <div key={e.id} style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.82rem", color: "var(--text-secondary)" }}>
-                      <BookOpen size={11} style={{ color: "var(--violet-400)", flexShrink: 0 }} />
-                      <span className="truncate-2">{e.lesson || e.module || e.course || e.raw_text}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+            <DailyPlan onEntriesAdded={handleEntriesAdded} />
           </div>
 
           {/* CENTER: Calendar */}
@@ -204,38 +190,47 @@ export default function DashboardPage() {
             )}
           </div>
 
-          {/* RIGHT: Entry Feed */}
+          {/* RIGHT: Task Uploading */}
           <div className="dashboard-col-feed" style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-            <div className="flex items-center gap-2 animate-fade-up stagger-2" style={{ marginBottom: "0.25rem" }}>
-              <h3 className="font-display" style={{ fontSize: "0.88rem", fontWeight: 700, color: "var(--text-secondary)" }}>
-                {displayLabel}
-              </h3>
-              {selectedDay && (
-                <button
-                  onClick={() => setSelectedDay(null)}
-                  style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: "0.75rem", marginLeft: "auto", padding: "0.2rem 0.5rem", borderRadius: "var(--r-sm)" }}
-                >
-                  Clear ✕
-                </button>
-              )}
+            <div className="dashboard-upload-section">
+              <LogInput onEntryAdded={handleEntryAdded} />
             </div>
+          </div>
+        </div>
 
-            {dataLoading ? (
-              <div className="flex justify-center p-8">
-                <Loader2 size={24} className="animate-spin" style={{ color: "var(--violet-400)" }} />
-              </div>
-            ) : displayEntries.length === 0 ? (
-              <div className="card animate-fade-up stagger-3" style={{ padding: "2rem", textAlign: "center" }}>
-                <div style={{ fontSize: "2.5rem", marginBottom: "0.75rem" }}>📚</div>
-                <p className="font-display" style={{ fontWeight: 600, fontSize: "0.92rem", marginBottom: "0.35rem" }}>
-                  {selectedDay ? "No entries this day" : "Your journey starts here"}
-                </p>
-                <p style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
-                  {selectedDay ? "Select a different day or log a new entry" : "Log your first study session above ↑"}
-                </p>
-              </div>
-            ) : (
-              displayEntries.map((entry, i) => (
+        {/* BOTTOM: Completed Tasks Feed */}
+        <section style={{ marginTop: "2rem" }}>
+          <div className="flex items-center gap-2 animate-fade-up stagger-2" style={{ marginBottom: "1rem" }}>
+            <h3 className="font-display" style={{ fontSize: "1.2rem", fontWeight: 700, color: "var(--text-secondary)" }}>
+              {displayLabel}
+            </h3>
+            {selectedDay && (
+              <button
+                onClick={() => setSelectedDay(null)}
+                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: "0.85rem", marginLeft: "auto", padding: "0.2rem 0.5rem", borderRadius: "var(--r-sm)" }}
+              >
+                Clear ✕
+              </button>
+            )}
+          </div>
+
+          {dataLoading ? (
+            <div className="flex justify-center p-8">
+              <Loader2 size={24} className="animate-spin" style={{ color: "var(--violet-400)" }} />
+            </div>
+          ) : displayEntries.length === 0 ? (
+            <div className="card animate-fade-up stagger-3" style={{ padding: "2rem", textAlign: "center", maxWidth: "600px", margin: "0 auto" }}>
+              <div style={{ fontSize: "2.5rem", marginBottom: "0.75rem" }}>📚</div>
+              <p className="font-display" style={{ fontWeight: 600, fontSize: "0.92rem", marginBottom: "0.35rem" }}>
+                {selectedDay ? "No entries this day" : "No tasks completed today"}
+              </p>
+              <p style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
+                {selectedDay ? "Select a different day or log a new entry" : "Log your first study session today ↑"}
+              </p>
+            </div>
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "1rem" }}>
+              {displayEntries.map((entry, i) => (
                 <div key={entry.id} className={`stagger-${Math.min(i + 1, 5)}`}>
                   <EntryCard
                     entry={entry}
@@ -243,17 +238,19 @@ export default function DashboardPage() {
                     onDelete={handleDeleteEntry}
                   />
                 </div>
-              ))
-            )}
+              ))}
+            </div>
+          )}
 
-            {!selectedDay && entries.length > 10 && (
-              <button className="btn btn-ghost btn-sm" style={{ width: "100%", marginTop: "0.5rem" }}>
+          {!selectedDay && entries.length > todayEntries.length && (
+            <div style={{ marginTop: "1rem", textAlign: "center" }}>
+              <button className="btn btn-ghost btn-sm">
                 <ChevronRight size={14} />
-                View all {entries.length} entries
+                View all past entries
               </button>
-            )}
-          </div>
-        </div>
+            </div>
+          )}
+        </section>
       </main>
     </div>
   );
