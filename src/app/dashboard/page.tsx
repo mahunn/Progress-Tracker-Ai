@@ -105,7 +105,7 @@ export default function DashboardPage() {
     }
   };
 
-  if (authLoading || dataLoading) {
+  if (authLoading) {
     return (
       <div
         style={{
@@ -118,7 +118,7 @@ export default function DashboardPage() {
         }}
       >
         <Loader2 size={32} style={{ color: "var(--violet-400)", animation: "spin 0.8s linear infinite" }} />
-        <p style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}>Loading your progress...</p>
+        <p style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}>Authenticating...</p>
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
@@ -165,7 +165,11 @@ export default function DashboardPage() {
               <LogInput onEntryAdded={handleEntryAdded} />
             </div>
 
-            {todayEntries.length > 0 && (
+            {dataLoading ? (
+              <div className="flex justify-center p-4">
+                <Loader2 size={24} className="animate-spin" style={{ color: "var(--violet-400)" }} />
+              </div>
+            ) : todayEntries.length > 0 && (
               <div className="dashboard-today-summary card animate-fade-up stagger-3" style={{ padding: "1.25rem" }}>
                 <div className="flex items-center gap-2 mb-3">
                   <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--emerald-400)", boxShadow: "0 0 8px rgba(16,185,129,0.5)" }} />
@@ -187,11 +191,17 @@ export default function DashboardPage() {
 
           {/* CENTER: Calendar */}
           <div className="dashboard-col-calendar card animate-fade-up stagger-1" style={{ padding: "1.5rem" }}>
-            <CalendarGrid
-              entryMap={entryMap}
-              onDayClick={setSelectedDay}
-              selectedDateKey={selectedDay?.dateKey ?? null}
-            />
+            {dataLoading ? (
+              <div className="flex justify-center items-center h-full min-h-[200px]">
+                <Loader2 size={24} className="animate-spin" style={{ color: "var(--violet-400)" }} />
+              </div>
+            ) : (
+              <CalendarGrid
+                entryMap={entryMap}
+                onDayClick={setSelectedDay}
+                selectedDateKey={selectedDay?.dateKey ?? null}
+              />
+            )}
           </div>
 
           {/* RIGHT: Entry Feed */}
@@ -210,7 +220,11 @@ export default function DashboardPage() {
               )}
             </div>
 
-            {displayEntries.length === 0 ? (
+            {dataLoading ? (
+              <div className="flex justify-center p-8">
+                <Loader2 size={24} className="animate-spin" style={{ color: "var(--violet-400)" }} />
+              </div>
+            ) : displayEntries.length === 0 ? (
               <div className="card animate-fade-up stagger-3" style={{ padding: "2rem", textAlign: "center" }}>
                 <div style={{ fontSize: "2.5rem", marginBottom: "0.75rem" }}>📚</div>
                 <p className="font-display" style={{ fontWeight: 600, fontSize: "0.92rem", marginBottom: "0.35rem" }}>

@@ -127,6 +127,9 @@ export async function POST(req: NextRequest) {
       parsed.confidence = 90;
     }
 
+    // Force the date to the current server date to prevent exploits
+    parsed.date = new Date().toISOString().split("T")[0];
+
     return NextResponse.json({ success: true, parsed });
   } catch (err) {
     console.error("[parse-entry] Error:", err);

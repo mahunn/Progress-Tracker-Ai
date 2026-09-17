@@ -130,11 +130,11 @@ export default function CalendarPage() {
     }
   };
 
-  if (authLoading || viewState === "loading") {
+  if (authLoading) {
     return (
       <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "1rem" }}>
         <Loader2 size={32} style={{ color: "var(--violet-400)", animation: "spin 0.8s linear infinite" }} />
-        <p style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}>Loading your calendar...</p>
+        <p style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}>Authenticating...</p>
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
@@ -199,7 +199,12 @@ export default function CalendarPage() {
         </section>
 
         <div className="animate-fade-up stagger-1">
-          {isProcessing ? (
+          {viewState === "loading" ? (
+             <div className="card" style={{ padding: "4rem 1.5rem", textAlign: "center" }}>
+                <Loader2 size={32} style={{ color: "var(--violet-400)", animation: "spin 0.8s linear infinite", margin: "0 auto 1rem" }} />
+                <h3 className="font-display" style={{ fontSize: "1.2rem", fontWeight: 600, marginBottom: "0.5rem" }}>Loading your schedule...</h3>
+             </div>
+          ) : isProcessing ? (
              <div className="card" style={{ padding: "4rem 1.5rem", textAlign: "center" }}>
                 <Loader2 size={32} style={{ color: "var(--violet-400)", animation: "spin 0.8s linear infinite", margin: "0 auto 1rem" }} />
                 <h3 className="font-display" style={{ fontSize: "1.2rem", fontWeight: 600, marginBottom: "0.5rem" }}>Preparing your schedule...</h3>

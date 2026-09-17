@@ -264,7 +264,7 @@ export default function FriendsPage() {
 
   const userRankEntry = leaderboard.find((lb) => lb.uid === user?.uid);
 
-  if (authLoading || pageLoading) {
+  if (authLoading) {
     return (
       <div style={{ minHeight: "100vh" }}>
         <NavBar streak={0} user={profile} />
@@ -575,8 +575,14 @@ export default function FriendsPage() {
           </button>
         </div>
 
-        {/* ─── TAB 1: LEADERBOARD RANKING ─── */}
-        {activeTab === "leaderboard" && (
+        {pageLoading ? (
+          <div style={{ display: "flex", justifyContent: "center", padding: "4rem" }}>
+            <Loader2 size={32} className="animate-spin text-violet-400" style={{ color: "var(--violet-400)", animation: "spin 0.8s linear infinite" }} />
+          </div>
+        ) : (
+          <>
+            {/* ─── TAB 1: LEADERBOARD RANKING ─── */}
+            {activeTab === "leaderboard" && (
           <div className="animate-fade-up">
             {/* User Standing Callout Card */}
             {userRankEntry && (
@@ -1345,6 +1351,8 @@ export default function FriendsPage() {
               )}
             </div>
           </div>
+        )}
+        </>
         )}
       </main>
     </div>

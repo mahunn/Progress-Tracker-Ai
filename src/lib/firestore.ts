@@ -173,6 +173,13 @@ export async function getFriends(uid: string): Promise<string[]> {
     .filter((id): id is string => Boolean(id) && typeof id === 'string');
 }
 
+export async function checkIfFriends(uid1: string, uid2: string): Promise<boolean> {
+  if (!uid1 || !uid2) return false;
+  if (uid1 === uid2) return true;
+  const snap = await getDoc(doc(db, 'friends', uid1, 'list', uid2));
+  return snap.exists();
+}
+
 
 // ── Leaderboard Ranking ───────────────────────────────────────
 

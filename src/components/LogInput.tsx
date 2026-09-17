@@ -292,9 +292,14 @@ export default function LogInput({ onEntryAdded }: LogInputProps) {
               </label>
               <input
                 className="input-field"
-                style={{ padding: "0.6rem 0.85rem", fontSize: "0.88rem" }}
+                style={{
+                  padding: "0.6rem 0.85rem",
+                  fontSize: "0.88rem",
+                  ...(key === "date" ? { background: "var(--bg-base)", cursor: "not-allowed", opacity: 0.8 } : {})
+                }}
                 value={String(parsed[key] ?? "")}
-                onChange={(e) => handleEdit(key, e.target.value)}
+                onChange={(e) => key !== "date" && handleEdit(key, e.target.value)}
+                readOnly={key === "date"}
               />
             </div>
           ))}

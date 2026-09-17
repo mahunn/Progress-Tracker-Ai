@@ -820,9 +820,9 @@ h4 { font-size: 1.1rem; font-weight: 600; }
   align-items: start;
 }
 
-@media (min-width: 800px) {
+@media (min-width: 900px) {
   .friend-profile-grid {
-    grid-template-columns: 1.4fr 1fr;
+    grid-template-columns: 1fr 1.5fr;
   }
 }
 

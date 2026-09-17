@@ -4,11 +4,13 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { searchUserByUsername } from "@/lib/firebase";
-import { getPublicEntriesByUid, buildEntryMap, computeStreakData } from "@/lib/firestore";
+import { getPublicEntriesByUid, buildEntryMap, computeStreakData, checkIfFriends, getWeeklyRoutine } from "@/lib/firestore";
 import CalendarGrid from "@/components/CalendarGrid";
 import EntryCard from "@/components/EntryCard";
-import { ProgressEntry, CalendarDay } from "@/lib/types";
-import { Flame, BookOpen, Loader2, ArrowLeft } from "lucide-react";
+import WeeklyCalendar from "@/components/WeeklyCalendar";
+import { ProgressEntry, CalendarDay, ScheduleCourse } from "@/lib/types";
+import { Flame, BookOpen, Loader2, ArrowLeft, Lock } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
 export default function PublicProfilePage() {
   const params = useParams();
@@ -24,9 +26,13 @@ export default function PublicProfilePage() {
   } | null>(null);
   const [entries, setEntries] = useState<ProgressEntry[]>([]);
   const [entryMap, setEntryMap] = useState<Record<string, ProgressEntry[]>>({});
+  const [courses, setCourses] = useState<ScheduleCourse[]>([]);
   const [selectedDay, setSelectedDay] = useState<CalendarDay | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [isFriend, setIsFriend] = useState(false);
+  
+  const { user: currentUser } = useAuth();
 
   useEffect(() => {
     (async () => {
@@ -37,12 +43,34 @@ export default function PublicProfilePage() {
         return;
       }
       setProfile(p as { uid: string; displayName: string; photoURL: string; username?: string; friendTag: string });
+      
       const userEntries = await getPublicEntriesByUid(p.uid as string);
       setEntries(userEntries);
-      setEntryMap(buildEntryMap(userEntries));
+      const eMap = buildEntryMap(userEntries);
+      setEntryMap(eMap);
+      
+      const d = new Date();
+      const todayKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      setSelectedDay({
+        dateKey: todayKey,
+        entries: eMap[todayKey] || []
+      });
+      
+      const routine = await getWeeklyRoutine(p.uid as string);
+      if (routine && routine.courses) {
+        setCourses(routine.courses);
+      }
+      
+      if (currentUser) {
+        const friendStatus = await checkIfFriends(currentUser.uid, p.uid);
+        setIsFriend(friendStatus);
+      } else {
+        setIsFriend(false);
+      }
+      
       setLoading(false);
     })();
-  }, [cleanTag]);
+  }, [cleanTag, currentUser]);
 
   if (loading) {
     return (
@@ -142,34 +170,73 @@ export default function PublicProfilePage() {
           </div>
         </div>
 
-        {/* Grid: calendar + entries */}
+        {/* Grid: calendar + planner */}
         <div className="friend-profile-grid">
-          <div className="card animate-fade-up stagger-1" style={{ padding: "1.5rem" }}>
-            <CalendarGrid entryMap={entryMap} onDayClick={setSelectedDay} selectedDateKey={selectedDay?.dateKey ?? null} />
+          {/* Left Column */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+            {/* Monthly Log */}
+            <div className="animate-fade-up stagger-1">
+              <h3 className="font-display" style={{ fontSize: "0.95rem", fontWeight: 700, color: "var(--text-secondary)", marginBottom: "0.75rem" }}>Monthly Log</h3>
+              <div className="card" style={{ padding: "1.5rem" }}>
+                <CalendarGrid entryMap={entryMap} onDayClick={setSelectedDay} selectedDateKey={selectedDay?.dateKey ?? null} />
+              </div>
+            </div>
+
+            {/* Selected Date Entries (Below) */}
+            {selectedDay && (
+              <div className="animate-fade-up stagger-3">
+                <div className="flex items-center justify-between" style={{ marginBottom: "1rem" }}>
+                  <h3 className="font-display" style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--text-secondary)" }}>
+                    Entries for {selectedDay.dateKey}
+                  </h3>
+                  <button onClick={() => setSelectedDay(null)} className="btn btn-ghost btn-sm">
+                    Clear ✕
+                  </button>
+                </div>
+                
+                {!isFriend && currentUser?.uid !== profile.uid ? (
+                  <div className="card" style={{ padding: "2rem", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "0.75rem", background: "var(--bg-elevated)", border: "1px dashed var(--border-soft)" }}>
+                    <Lock size={28} style={{ color: "var(--text-muted)" }} />
+                    <div>
+                      <h4 style={{ fontWeight: 600, color: "var(--text-primary)", marginBottom: "0.25rem" }}>Private Entries</h4>
+                      <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", maxWidth: 240, margin: "0 auto" }}>Only friends can see {profile.displayName}'s detailed tasks and study logs.</p>
+                    </div>
+                  </div>
+                ) : displayEntries.length === 0 ? (
+                  <div className="card" style={{ padding: "2rem", textAlign: "center" }}>
+                    <div style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>📭</div>
+                    <p style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>No entries this day.</p>
+                  </div>
+                ) : (
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "1rem" }}>
+                    {displayEntries.map((entry, i) => (
+                      <EntryCard key={entry.id} entry={entry} />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-            <div className="flex items-center justify-between animate-fade-up stagger-2" style={{ marginBottom: "0.25rem" }}>
-              <h3 className="font-display" style={{ fontSize: "0.88rem", fontWeight: 700, color: "var(--text-secondary)" }}>
-                {selectedDay ? selectedDay.dateKey : "Recent Entries"}
-              </h3>
-              {selectedDay && (
-                <button onClick={() => setSelectedDay(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: "0.75rem" }}>
-                  Clear ✕
-                </button>
-              )}
-            </div>
-            {displayEntries.length === 0 ? (
-              <div className="card" style={{ padding: "2rem", textAlign: "center" }}>
-                <div style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>📭</div>
-                <p style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>No entries {selectedDay ? "this day" : "yet"}</p>
+          {/* Right: Weekly Planner */}
+          <div className="animate-fade-up stagger-2" style={{ display: "flex", flexDirection: "column" }}>
+            {!isFriend && currentUser?.uid !== profile.uid ? (
+              <div className="card" style={{ padding: "2rem", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "0.75rem", background: "var(--bg-elevated)", border: "1px dashed var(--border-soft)", flex: 1, minHeight: 300 }}>
+                <Lock size={28} style={{ color: "var(--text-muted)" }} />
+                <div>
+                  <h4 style={{ fontWeight: 600, color: "var(--text-primary)", marginBottom: "0.25rem" }}>Private Weekly Planner</h4>
+                  <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", maxWidth: 240, margin: "0 auto" }}>Only friends can see {profile.displayName}'s weekly planner.</p>
+                </div>
+              </div>
+            ) : courses.length === 0 ? (
+              <div className="card" style={{ padding: "2rem", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flex: 1, minHeight: 300 }}>
+                <p style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}>{profile.displayName} hasn't set up a weekly planner yet.</p>
               </div>
             ) : (
-              displayEntries.map((entry, i) => (
-                <div key={entry.id} className={`stagger-${Math.min(i + 1, 5)}`}>
-                  <EntryCard entry={entry} />
-                </div>
-              ))
+              <div style={{ flex: 1 }}>
+                <h3 className="font-display" style={{ fontSize: "0.95rem", fontWeight: 700, color: "var(--text-secondary)", marginBottom: "0.75rem" }}>Weekly Routine</h3>
+                <WeeklyCalendar courses={courses} />
+              </div>
             )}
           </div>
         </div>

@@ -228,3 +228,6 @@ export interface UserProfile {
 3. **Optimistic Updates**: Any mutation to entries, statuses, or streaks in the dashboard must update React state immediately before awaiting Firebase Firestore network calls to ensure a snappy user experience.
 4. **Data Size Awareness**: Any screenshot storage must use client-side compression (`compressImage`) or external storage URLs to avoid exceeding Firestore's 1MB document limit.
 5. **Defensive Firestore Queries**: Never pass `undefined` or empty strings to `where()`, `doc()`, or subcollection references. All Firestore helper functions (`getUserEntries`, `getPublicEntriesByUid`, `getIncomingRequests`, `getFriends`, `getUserProfile`, `searchUserByUsername`) must guard early against falsy parameters, filter mapped results for valid IDs, and guarantee document ID mapping (`{ uid: doc.id, ...doc.data() }`).
+6. **Privacy Controls**: 
+   - Public profiles (`/u/[username]`) only show detailed completed entries and task lists to confirmed friends. Non-friends can only see aggregate statistics (Streak, This Month) and the calendar heatmap.
+7. **Secure Date Enforcement**: Task creation strictly uses the server's UTC date via the `/api/parse-entry` API to prevent users from manipulating their client-side clock to spoof streaks. The date field in the review UI is read-only.
