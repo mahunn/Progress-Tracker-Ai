@@ -52,8 +52,13 @@ export default function PublicProfilePage() {
       const d = new Date();
       const todayKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
       setSelectedDay({
+        date: d,
         dateKey: todayKey,
-        entries: eMap[todayKey] || []
+        status: "today",
+        entryCount: (eMap[todayKey] || []).length,
+        entries: eMap[todayKey] || [],
+        isToday: true,
+        isFuture: false
       });
       
       const routine = await getWeeklyRoutine(p.uid as string);
