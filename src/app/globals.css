@@ -1207,3 +1207,12 @@ h4 { font-size: 1.1rem; font-weight: 600; }
   font-weight: 500;
   color: rgba(255,255,255,0.9);
 }
+
+@media (max-width: 768px) {
+  .site-footer {
+    padding-bottom: calc(2.5rem + 70px) !important;
+  }
+  .site-footer .footer-logo {
+    height: 38px !important;
+  }
+}

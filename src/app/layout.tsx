@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Script from "next/script";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
+import Footer from "@/components/Footer";
 
 export const metadata: Metadata = {
   title: "Pathly — AI Progress Tracker",
@@ -54,7 +55,10 @@ export default function RootLayout({
         </Script>
       </head>
       <body>
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          {children}
+          <Footer />
+        </AuthProvider>
       </body>
     </html>
   );
