@@ -163,7 +163,15 @@ export interface UserProfile {
    - Persists to Firestore (`saveEntryToFirestore`) and localStorage (`saveEntry`).
    - `CalendarGrid` automatically updates the day's status (e.g. turning a partial day into a green completed day when all items are done).
 
-### 3. Unique Username & Friends System
+### 4. Summary & AI Recap
+1. User visits `/summary` and can filter their history by timeframe ("Past 7 Days", "Past 30 Days", "All Time").
+2. The page fetches `entries` and filters them client-side, displaying high-level stats (Total Entries, Completed, In Progress).
+3. The **Course Breakdown** visualizes the distribution of entries across subjects and courses, and plots completion ratios.
+4. The user can click "Generate AI Recap" which posts their visible entries to `/api/generate-summary`.
+5. The `gemini-2.5-flash` model reviews the data, acts as a tutor, and returns a motivational markdown recap of what they learned and what needs attention.
+6. The frontend renders the markdown smoothly using a custom HTML replacer.
+
+### 5. Unique Username & Friends System
 1. **Default Username Generation on Google Login**:
    - `ensureUserProfile` generates a clean, unique username upon login:
      - 1st attempt: First name in lowercase (e.g. `"mahin"`).

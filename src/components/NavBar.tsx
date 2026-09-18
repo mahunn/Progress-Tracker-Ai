@@ -12,7 +12,7 @@ const NAV_ITEMS = [
   { href: "/dashboard", label: "Log", icon: BookOpen },
   { href: "/calendar", label: "Planner", icon: Calendar },
   { href: "/friends", label: "Friends", icon: Users },
-  { href: "/weekly", label: "Summary", icon: BarChart2 },
+  { href: "/summary", label: "Summary", icon: BarChart2 },
 ];
 
 interface NavBarProps {
@@ -66,7 +66,7 @@ export default function NavBar({ streak = 0, user }: NavBarProps) {
             alt="Pathly"
             className="brand-logo"
             style={{
-              height: 38,
+              height: 48,
               width: "auto",
               objectFit: "contain",
             }}

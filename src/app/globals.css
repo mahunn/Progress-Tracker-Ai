@@ -615,10 +615,16 @@ h4 { font-size: 1.1rem; font-weight: 600; }
   align-items: center;
   justify-content: space-between;
   padding: 0 1.5rem;
-  background: var(--bg-nav);
-  backdrop-filter: blur(20px) saturate(1.8);
-  -webkit-backdrop-filter: blur(20px) saturate(1.8);
+  background: var(--bg-surface); /* Solid fallback for older browsers */
   border-bottom: 1px solid var(--border-subtle);
+}
+
+@supports (backdrop-filter: blur(20px)) or (-webkit-backdrop-filter: blur(20px)) {
+  .nav-bar {
+    background: var(--bg-nav);
+    backdrop-filter: blur(20px) saturate(1.8);
+    -webkit-backdrop-filter: blur(20px) saturate(1.8);
+  }
 }
 
 .nav-left {
@@ -946,14 +952,20 @@ h4 { font-size: 1.1rem; font-weight: 600; }
     right: 0;
     z-index: 90;
     height: 60px;
-    background: var(--bg-nav);
-    backdrop-filter: blur(20px) saturate(1.8);
-    -webkit-backdrop-filter: blur(20px) saturate(1.8);
+    background: var(--bg-surface); /* Solid fallback */
     border-top: 1px solid var(--border-subtle);
     align-items: center;
     justify-content: space-around;
     padding: 0 0.5rem;
     padding-bottom: max(0.2rem, env(safe-area-inset-bottom));
+  }
+
+  @supports (backdrop-filter: blur(20px)) or (-webkit-backdrop-filter: blur(20px)) {
+    .mobile-bottom-nav {
+      background: var(--bg-nav);
+      backdrop-filter: blur(20px) saturate(1.8);
+      -webkit-backdrop-filter: blur(20px) saturate(1.8);
+    }
   }
 
   .mobile-nav-item {
