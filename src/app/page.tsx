@@ -18,26 +18,30 @@ export default function LandingPage() {
     }
   }, [user, loading, router]);
 
-  if (loading) {
+  // If already authenticated, show brief redirecting state while navigating
+  if (user) {
     return (
       <div
         style={{
           minHeight: "100vh",
           display: "flex",
+          flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
+          gap: "1rem",
         }}
       >
         <div
           style={{
-            width: 48,
-            height: 48,
+            width: 44,
+            height: 44,
             borderRadius: "50%",
             border: "3px solid var(--border-subtle)",
             borderTopColor: "var(--violet-500)",
             animation: "spin 0.8s linear infinite",
           }}
         />
+        <p style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}>Redirecting to dashboard...</p>
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );

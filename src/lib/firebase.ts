@@ -68,21 +68,27 @@ export async function isUsernameAvailable(username: string, excludeUid?: string)
   const clean = cleanUsername(username);
   if (!clean || clean.length < 2) return false;
 
-  // Check username field
-  const q1 = query(collection(db, "users"), where("username", "==", clean));
-  const snap1 = await getDocs(q1);
-  for (const d of snap1.docs) {
-    if (d.id !== excludeUid) return false;
-  }
+  try {
+    // Check username field
+    const q1 = query(collection(db, "users"), where("username", "==", clean));
+    const snap1 = await getDocs(q1);
+    for (const d of snap1.docs) {
+      if (d.id !== excludeUid) return false;
+    }
 
-  // Also check friendTag field for backward compatibility
-  const q2 = query(collection(db, "users"), where("friendTag", "==", clean));
-  const snap2 = await getDocs(q2);
-  for (const d of snap2.docs) {
-    if (d.id !== excludeUid) return false;
-  }
+    // Also check friendTag field for backward compatibility
+    const q2 = query(collection(db, "users"), where("friendTag", "==", clean));
+    const snap2 = await getDocs(q2);
+    for (const d of snap2.docs) {
+      if (d.id !== excludeUid) return false;
+    }
 
-  return true;
+    return true;
+  } catch (err) {
+    console.warn("Could not check username availability in Firestore:", err);
+    // Don't crash login flow if collection query is denied or network is restricted
+    return true;
+  }
 }
 
 /**
@@ -103,28 +109,32 @@ export async function generateUniqueUsername(
 
   const firstName = parts[0] || "";
   const lastName = parts[1] || "";
-
-  // 1. Try first name
-  if (firstName.length >= 2) {
-    const isFree = await isUsernameAvailable(firstName);
-    if (isFree) return firstName;
-  }
-
-  // 2. Try first name + last name
-  if (firstName && lastName) {
-    const combined = cleanUsername(`${firstName}${lastName}`);
-    if (combined.length >= 2) {
-      const isFree = await isUsernameAvailable(combined);
-      if (isFree) return combined;
-    }
-  }
-
-  // 3. Try base + number (2 to 99)
   const base = firstName || cleanUsername(email?.split("@")[0] || "user") || "user";
-  for (let i = 2; i <= 99; i++) {
-    const candidate = `${base}${i}`;
-    const isFree = await isUsernameAvailable(candidate);
-    if (isFree) return candidate;
+
+  try {
+    // 1. Try first name
+    if (firstName.length >= 2) {
+      const isFree = await isUsernameAvailable(firstName);
+      if (isFree) return firstName;
+    }
+
+    // 2. Try first name + last name
+    if (firstName && lastName) {
+      const combined = cleanUsername(`${firstName}${lastName}`);
+      if (combined.length >= 2) {
+        const isFree = await isUsernameAvailable(combined);
+        if (isFree) return combined;
+      }
+    }
+
+    // 3. Try base + number (2 to 10)
+    for (let i = 2; i <= 10; i++) {
+      const candidate = `${base}${i}`;
+      const isFree = await isUsernameAvailable(candidate);
+      if (isFree) return candidate;
+    }
+  } catch (err) {
+    console.warn("Error during unique username generation:", err);
   }
 
   // 4. Fallback random
@@ -149,14 +159,19 @@ export async function updateUsername(
     return { success: false, error: "Only letters, numbers, and underscores are allowed." };
   }
 
-  const isFree = await isUsernameAvailable(clean, uid);
-  if (!isFree) {
-    return { success: false, error: `Username "${clean}" is already taken. Please try another.` };
-  }
+  try {
+    const isFree = await isUsernameAvailable(clean, uid);
+    if (!isFree) {
+      return { success: false, error: `Username "${clean}" is already taken. Please try another.` };
+    }
 
-  const ref = doc(db, "users", uid);
-  await setDoc(ref, { username: clean, friendTag: clean }, { merge: true });
-  return { success: true, username: clean };
+    const ref = doc(db, "users", uid);
+    await setDoc(ref, { username: clean, friendTag: clean }, { merge: true });
+    return { success: true, username: clean };
+  } catch (err) {
+    console.error("Failed to update username in Firestore:", err);
+    return { success: false, error: "Database error while updating username. Please try again." };
+  }
 }
 
 // ── Legacy Friend Tag Helpers (without pathly prefix) ─────────
@@ -174,46 +189,59 @@ export function formatFriendTag(input: string): string {
 
 // ── Ensure user profile exists in Firestore ───────────────────
 export async function ensureUserProfile(user: User): Promise<void> {
-  const ref = doc(db, "users", user.uid);
-  const snap = await getDoc(ref);
+  try {
+    const ref = doc(db, "users", user.uid);
+    const snap = await getDoc(ref);
 
-  if (!snap.exists()) {
-    const username = await generateUniqueUsername(user.displayName, user.email);
-    await setDoc(ref, {
-      uid: user.uid,
-      displayName: user.displayName || username,
-      email: user.email,
-      photoURL: user.photoURL,
-      username: username,
-      friendTag: username,
-      isPublic: true,
-      createdAt: new Date().toISOString(),
-    });
-  } else {
-    // Migrate existing users if missing a clean username or having legacy "#pathly-" format
-    const data = snap.data();
-    if (!data.username || data.friendTag?.startsWith("#pathly-")) {
-      const existingClean = data.username
-        ? cleanUsername(data.username)
-        : data.friendTag
-        ? cleanUsername(data.friendTag.replace(/^#pathly-/, ""))
-        : "";
+    if (!snap.exists()) {
+      const username = await generateUniqueUsername(user.displayName, user.email);
+      await setDoc(ref, {
+        uid: user.uid,
+        displayName: user.displayName || username,
+        email: user.email,
+        photoURL: user.photoURL,
+        username: username,
+        friendTag: username,
+        isPublic: true,
+        createdAt: new Date().toISOString(),
+      });
+    } else {
+      // Migrate existing users if missing a clean username or having legacy "#pathly-" format
+      const data = snap.data();
+      if (!data.username || data.friendTag?.startsWith("#pathly-")) {
+        const existingClean = data.username
+          ? cleanUsername(data.username)
+          : data.friendTag
+          ? cleanUsername(data.friendTag.replace(/^#pathly-/, ""))
+          : "";
 
-      let username = "";
-      if (existingClean && (await isUsernameAvailable(existingClean, user.uid))) {
-        username = existingClean;
-      } else {
-        username = await generateUniqueUsername(user.displayName || data.displayName, user.email || data.email);
+        let username = existingClean;
+        try {
+          if (existingClean && (await isUsernameAvailable(existingClean, user.uid))) {
+            username = existingClean;
+          } else {
+            username = await generateUniqueUsername(user.displayName || data.displayName, user.email || data.email);
+          }
+        } catch {
+          username = existingClean || cleanUsername(user.displayName?.split(/\s+/)[0] || "user");
+        }
+        await setDoc(ref, { username, friendTag: username }, { merge: true });
       }
-      await setDoc(ref, { username, friendTag: username }, { merge: true });
     }
+  } catch (err) {
+    console.warn("Could not ensure user profile in Firestore:", err);
   }
 }
 
 export async function getUserProfile(uid: string) {
   if (!uid) return null;
-  const snap = await getDoc(doc(db, "users", uid));
-  return snap.exists() ? { uid: snap.id, ...snap.data() } : null;
+  try {
+    const snap = await getDoc(doc(db, "users", uid));
+    return snap.exists() ? { uid: snap.id, ...snap.data() } : null;
+  } catch (err) {
+    console.warn("Could not fetch user profile from Firestore:", err);
+    return null;
+  }
 }
 
 /**
@@ -223,20 +251,24 @@ export async function searchUserByUsername(searchQuery: string) {
   const clean = cleanUsername(searchQuery.replace(/^[#@]/, "").replace(/^pathly-/, ""));
   if (!clean) return null;
 
-  // 1. Search by username
-  const q1 = query(collection(db, "users"), where("username", "==", clean));
-  const snap1 = await getDocs(q1);
-  if (!snap1.empty) return { uid: snap1.docs[0].id, ...snap1.docs[0].data() };
+  try {
+    // 1. Search by username
+    const q1 = query(collection(db, "users"), where("username", "==", clean));
+    const snap1 = await getDocs(q1);
+    if (!snap1.empty) return { uid: snap1.docs[0].id, ...snap1.docs[0].data() };
 
-  // 2. Search by friendTag (exact clean tag)
-  const q2 = query(collection(db, "users"), where("friendTag", "==", clean));
-  const snap2 = await getDocs(q2);
-  if (!snap2.empty) return { uid: snap2.docs[0].id, ...snap2.docs[0].data() };
+    // 2. Search by friendTag (exact clean tag)
+    const q2 = query(collection(db, "users"), where("friendTag", "==", clean));
+    const snap2 = await getDocs(q2);
+    if (!snap2.empty) return { uid: snap2.docs[0].id, ...snap2.docs[0].data() };
 
-  // 3. Search by legacy #pathly- prefix for backward compatibility
-  const q3 = query(collection(db, "users"), where("friendTag", "==", `#pathly-${clean}`));
-  const snap3 = await getDocs(q3);
-  if (!snap3.empty) return { uid: snap3.docs[0].id, ...snap3.docs[0].data() };
+    // 3. Search by legacy #pathly- prefix for backward compatibility
+    const q3 = query(collection(db, "users"), where("friendTag", "==", `#pathly-${clean}`));
+    const snap3 = await getDocs(q3);
+    if (!snap3.empty) return { uid: snap3.docs[0].id, ...snap3.docs[0].data() };
+  } catch (err) {
+    console.warn("User search query failed:", err);
+  }
 
   return null;
 }

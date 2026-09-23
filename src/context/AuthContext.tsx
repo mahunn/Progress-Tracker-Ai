@@ -8,7 +8,7 @@ import {
   ReactNode,
 } from "react";
 import { onAuthStateChanged, User } from "firebase/auth";
-import { auth, ensureUserProfile, getUserProfile, signOut } from "@/lib/firebase";
+import { auth, cleanUsername, ensureUserProfile, getUserProfile, signOut } from "@/lib/firebase";
 
 interface UserProfile {
   uid: string;
@@ -44,24 +44,74 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshProfile = async () => {
     if (auth.currentUser) {
-      const p = await getUserProfile(auth.currentUser.uid);
-      setProfile(p as UserProfile | null);
+      try {
+        const p = await getUserProfile(auth.currentUser.uid);
+        if (p) setProfile(p as UserProfile);
+      } catch (err) {
+        console.warn("Failed to refresh user profile:", err);
+      }
     }
   };
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
-      setUser(firebaseUser);
-      if (firebaseUser) {
-        await ensureUserProfile(firebaseUser);
-        const p = await getUserProfile(firebaseUser.uid);
-        setProfile(p as UserProfile | null);
-      } else {
-        setProfile(null);
+    let isMounted = true;
+
+    // Safety timeout: loading must never hang forever regardless of network or storage state
+    const timeoutId = setTimeout(() => {
+      if (isMounted) {
+        setLoading(false);
       }
-      setLoading(false);
+    }, 2500);
+
+    const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
+      try {
+        if (!isMounted) return;
+        setUser(firebaseUser);
+
+        if (firebaseUser) {
+          // Immediately provide baseline profile so UI hydrates instantly
+          const defaultName = firebaseUser.displayName || "User";
+          const defaultTag = cleanUsername(defaultName.split(/\s+/)[0] || "user") || "user";
+          const baselineProfile: UserProfile = {
+            uid: firebaseUser.uid,
+            displayName: defaultName,
+            email: firebaseUser.email || "",
+            photoURL: firebaseUser.photoURL || "",
+            username: defaultTag,
+            friendTag: defaultTag,
+            isPublic: true,
+            createdAt: new Date().toISOString(),
+          };
+          setProfile(baselineProfile);
+
+          // Asynchronously ensure profile exists and sync with Firestore in background
+          try {
+            await ensureUserProfile(firebaseUser);
+            const p = await getUserProfile(firebaseUser.uid);
+            if (p && isMounted) {
+              setProfile(p as UserProfile);
+            }
+          } catch (profileErr) {
+            console.warn("Could not sync profile with Firestore:", profileErr);
+          }
+        } else {
+          setProfile(null);
+        }
+      } catch (err) {
+        console.error("Error in onAuthStateChanged handler:", err);
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+          clearTimeout(timeoutId);
+        }
+      }
     });
-    return () => unsub();
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timeoutId);
+      unsub();
+    };
   }, []);
 
   return (

@@ -20,8 +20,19 @@ export default function AuthModal({ onClose }: AuthModalProps) {
     try {
       await loginWithGoogle();
       onClose?.();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Sign-in failed. Please try again.");
+    } catch (err: unknown) {
+      const firebaseError = err as { code?: string; message?: string };
+      const code = firebaseError?.code || "";
+      if (code === "auth/unauthorized-domain") {
+        const domain = typeof window !== "undefined" ? window.location.hostname : "this domain";
+        setError(`Domain not authorized: Please add "${domain}" to Authorized Domains in Firebase Console (Authentication > Settings > Authorized domains).`);
+      } else if (code === "auth/popup-closed-by-user") {
+        setError("Sign-in popup was closed before completing. Please try again.");
+      } else if (code === "auth/popup-blocked") {
+        setError("Sign-in popup was blocked by your browser. Please enable popups for this site.");
+      } else {
+        setError(err instanceof Error ? err.message : "Sign-in failed. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
