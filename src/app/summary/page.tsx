@@ -6,6 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import NavBar from "@/components/NavBar";
 import { ProgressEntry } from "@/lib/types";
 import { getUserEntries, computeStreakData } from "@/lib/firestore";
+import { getAllEntries, syncEntriesWithFirestore } from "@/lib/store";
 import { Loader2, Calendar as CalendarIcon } from "lucide-react";
 import AIRecapCard from "@/components/summary/AIRecapCard";
 import CourseProgressStats from "@/components/summary/CourseProgressStats";
@@ -32,9 +33,21 @@ export default function SummaryPage() {
     const fetchEntries = async () => {
       if (!user) return;
       try {
-        const all = await getUserEntries(user.uid);
-        setEntries(all);
-        setStreak(computeStreakData(all));
+        const local = getAllEntries();
+        if (local.length > 0) {
+          setEntries(local);
+          setStreak(computeStreakData(local));
+        }
+
+        const remote = await getUserEntries(user.uid);
+        const unified = await syncEntriesWithFirestore(user.uid, remote);
+        setEntries(unified);
+        setStreak(computeStreakData(unified));
+      } catch (err) {
+        console.warn("Could not fetch remote entries for summary, using local cache:", err);
+        const local = getAllEntries();
+        setEntries(local);
+        setStreak(computeStreakData(local));
       } finally {
         setDataLoading(false);
       }
